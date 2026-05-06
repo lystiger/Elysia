@@ -26,7 +26,7 @@ type AssistantStore = {
 let focusComposerImpl: (() => void) | null = null;
 
 export const useAssistantStore = create<AssistantStore>((set, get) => ({
-  activeModel: "qwen3:8b",
+  activeModel: "deepseek-r1:8b",
   appVersion: "",
   avatarUrl: avatarShell,
   history: [],
@@ -60,19 +60,24 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
     try {
       let firstToken = true;
+      let accumulatedContent = "";
 
       await streamFromOllama({
         model: get().activeModel,
         prompt,
         onToken: (token) => {
-          set((state) => ({
-            history: state.history.map((entry) =>
-              entry.id === assistantId
-                ? { ...entry, content: `${entry.content}${token}` }
-                : entry
-            ),
-            state: firstToken ? "responding" : state.state
-          }));
+          accumulatedContent += token;
+          set((state) => {
+            const newHistory = [...state.history];
+            const lastIdx = newHistory.length - 1;
+            if (lastIdx >= 0 && newHistory[lastIdx].id === assistantId) {
+              newHistory[lastIdx] = { ...newHistory[lastIdx], content: accumulatedContent };
+            }
+            return {
+              history: newHistory,
+              state: firstToken ? "responding" : state.state
+            };
+          });
           firstToken = false;
         }
       });

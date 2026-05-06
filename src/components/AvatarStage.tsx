@@ -7,31 +7,31 @@ const stateConfig = {
   idle: {
     label: "Idle",
     ring: "from-cyan-300/20 via-cyan-300/5 to-fuchsia-300/20",
-    glow: "shadow-[0_0_80px_rgba(100,241,255,0.14)]",
+    glow: "shadow-[0_0_40px_rgba(100,241,255,0.1)]",
     icon: Sparkle
   },
   listening: {
     label: "Listening",
     ring: "from-blue-300/50 via-cyan-300/10 to-blue-300/50",
-    glow: "shadow-[0_0_110px_rgba(88,166,255,0.34)]",
+    glow: "shadow-[0_0_60px_rgba(88,166,255,0.2)]",
     icon: Mic
   },
   thinking: {
     label: "Thinking",
     ring: "from-fuchsia-300/45 via-cyan-300/10 to-fuchsia-300/45",
-    glow: "shadow-[0_0_120px_rgba(255,127,224,0.28)]",
+    glow: "shadow-[0_0_70px_rgba(255,127,224,0.15)]",
     icon: Radio
   },
   responding: {
     label: "Responding",
     ring: "from-cyan-200/60 via-sky-300/10 to-cyan-100/60",
-    glow: "shadow-[0_0_140px_rgba(100,241,255,0.38)]",
+    glow: "shadow-[0_0_80px_rgba(100,241,255,0.25)]",
     icon: Sparkle
   },
   error: {
     label: "Error",
     ring: "from-red-300/60 via-red-300/10 to-red-300/60",
-    glow: "shadow-[0_0_120px_rgba(255,95,115,0.32)]",
+    glow: "shadow-[0_0_60px_rgba(255,95,115,0.2)]",
     icon: TriangleAlert
   }
 } as const;
@@ -44,12 +44,12 @@ export function AvatarStage() {
 
   return (
     <div className="relative flex min-h-[32rem] items-center justify-center overflow-hidden rounded-[28px] border border-white/10 bg-[linear-gradient(180deg,_rgba(255,255,255,0.06),_rgba(255,255,255,0.01))]">
-      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(100,241,255,0.18),_transparent_38%)]" />
+      <div className="absolute inset-0 bg-[radial-gradient(circle_at_center,_rgba(100,241,255,0.12),_transparent_40%)]" />
       <motion.div
         animate={state === "thinking" ? { rotate: 360 } : { rotate: 0 }}
-        transition={state === "thinking" ? { duration: 5, repeat: Infinity, ease: "linear" } : { duration: 0.6 }}
+        transition={state === "thinking" ? { duration: 8, repeat: Infinity, ease: "linear" } : { duration: 0.6 }}
         className={clsx(
-          "absolute h-[21rem] w-[21rem] rounded-full bg-gradient-to-br blur-md",
+          "absolute h-[21rem] w-[21rem] rounded-full bg-gradient-to-br blur-sm",
           config.ring,
           config.glow
         )}
