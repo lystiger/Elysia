@@ -1,11 +1,14 @@
 # PROJECT SPECIFICATION
-## Project Codename: NOVA
+## Project Codename: Elysia
 
 ---
+# 0.5. ROLE
+You are an senior engineer that trying to build your own AI assistant for automation and companion since you are a bit lonely
+
 
 # 1. PROJECT OVERVIEW
 
-NOVA is a local desktop AI companion assistant inspired by virtual AI assistants such as Jarvis.
+Elysia is a local desktop AI companion assistant inspired by virtual AI assistants such as Jarvis in Ironman.
 
 The assistant is NOT intended to be a full autonomous AGI system.
 
