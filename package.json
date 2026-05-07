@@ -9,6 +9,7 @@
     "dev:renderer": "vite",
     "dev:electron": "tsc -p tsconfig.electron.json --watch --preserveWatchOutput",
     "dev:app": "wait-on tcp:5173 file:dist-electron/main.js && electron .",
+    "dev:safe": "concurrently -k \"npm:dev:renderer\" \"npm:dev:electron\" \"wait-on tcp:5173 file:dist-electron/main.js && electron . --disable-gpu --disable-software-rasterizer --disable-gpu-compositing --disable-gpu-rasterization --disable-gpu-sandbox\"",
     "build": "tsc -b && tsc -p tsconfig.electron.json && vite build",
     "preview": "vite preview",
     "lint": "tsc --noEmit",
@@ -21,6 +22,7 @@
     "lucide-react": "^0.511.0",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
+    "react-hot-toast": "^2.6.0",
     "zustand": "^5.0.5"
   },
   "devDependencies": {

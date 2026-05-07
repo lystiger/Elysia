@@ -1,4 +1,5 @@
 import { create } from "zustand";
+import { toast } from "react-hot-toast";
 
 export type Goal = {
   id: string;
@@ -33,7 +34,7 @@ type ProductivityStore = {
   startSession: (title: string, objective: string, duration: number) => void;
   pauseSession: () => void;
   resumeSession: () => void;
-  endSession: () => void;
+  endSession: () => Promise<void>;
   tickSession: () => void;
 };
 
@@ -103,13 +104,15 @@ export const useProductivityStore = create<ProductivityStore>((set, get) => ({
     const completedSession = { ...session, status: "completed" as const };
     set({ activeSession: completedSession });
 
-    // 1. Notify
+    // 1. Notify (Native + Fallback Toast)
     void window.elysiaDesktop.notify("Session Complete", `Objective: ${session.objective}`);
+    toast.success(`Session Complete: ${session.objective}`, {
+      duration: 5000,
+      icon: "🎯",
+    });
 
-    // 2. Trigger summary in background if there's enough data
-    // We'll use a simplified trigger for now
+    // 2. Trigger summary in background
     try {
-      // In a real implementation, we'd pull history from assistantStore
       const summaryFileName = `summary-${session.id}.json`;
       await window.elysiaDesktop.memory.write(`summaries/${summaryFileName}`, {
         ...completedSession,
@@ -132,7 +135,7 @@ export const useProductivityStore = create<ProductivityStore>((set, get) => ({
       
       // Auto-complete if time is up
       if (session.elapsedSeconds + 1 >= session.durationMinutes * 60) {
-        get().endSession();
+        void get().endSession();
       }
     }
   },
