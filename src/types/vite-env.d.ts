@@ -11,6 +11,12 @@ declare global {
         swapTotal: number;
         swapFree: number;
       }>;
+      memory: {
+        read: (fileName: string) => Promise<unknown>;
+        write: (fileName: string, data: unknown) => Promise<{ success: true }>;
+        listSummaries: () => Promise<string[]>;
+      };
+      notify: (title: string, body: string) => Promise<void>;
     };
   }
 }

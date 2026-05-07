@@ -3,7 +3,17 @@ import { pingOllama, streamFromOllama } from "../services/ollama";
 import { playResponseComplete } from "../services/system/sound";
 import type { Message } from "../domain/message/message";
 
-export type AssistantState = "ready" | "thinking" | "generating" | "offline";
+export type AssistantState =
+  | "ready"
+  | "idle"
+  | "listening"
+  | "thinking"
+  | "generating"
+  | "responding"
+  | "focused"
+  | "paused"
+  | "offline"
+  | "error";
 export type ConnectionStatus = "checking" | "connected" | "offline";
 
 type AssistantStore = {
@@ -17,10 +27,12 @@ type AssistantStore = {
   historyOpen: boolean;
   promptSeed: string | null;
   state: AssistantState;
+  isUserTyping: boolean;
   setActiveModel: (model: string) => void;
   setAvailableModels: (models: string[]) => void;
   setState: (state: AssistantState) => void;
   setAppVersion: (version: string) => void;
+  setTyping: (isTyping: boolean) => void;
   focusComposer: (fn: () => void) => void;
   sendPrompt: (prompt: string) => Promise<void>;
   newChat: () => void;
@@ -43,10 +55,12 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   historyOpen: false,
   promptSeed: null,
   state: "ready",
+  isUserTyping: false,
   setActiveModel: (activeModel) => set({ activeModel }),
   setAvailableModels: (availableModels) => set({ availableModels }),
   setState: (state) => set({ state }),
   setAppVersion: (appVersion) => set({ appVersion }),
+  setTyping: (isUserTyping) => set({ isUserTyping }),
   focusComposer: (fn) => {
     focusComposerImpl = fn;
   },

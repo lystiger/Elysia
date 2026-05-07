@@ -16,5 +16,11 @@ contextBridge.exposeInMainWorld("elysiaDesktop", {
       free: number;
       swapTotal: number;
       swapFree: number;
-    }>
+    }>,
+  memory: {
+    read: (fileName: string) => ipcRenderer.invoke("memory:read", fileName),
+    write: (fileName: string, data: unknown) => ipcRenderer.invoke("memory:write", fileName, data),
+    listSummaries: () => ipcRenderer.invoke("memory:list-summaries")
+  },
+  notify: (title: string, body: string) => ipcRenderer.invoke("app:notify", { title, body })
 });

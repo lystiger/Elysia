@@ -1,0 +1,139 @@
+import { create } from "zustand";
+
+export type Goal = {
+  id: string;
+  title: string;
+  category: "daily" | "long-term";
+  status: "active" | "completed" | "archived";
+  priority: "low" | "medium" | "high";
+  createdAt: number;
+};
+
+export type FocusSession = {
+  id: string;
+  title: string;
+  objective: string;
+  startTime: number;
+  durationMinutes: number;
+  status: "active" | "paused" | "completed" | "cancelled";
+  elapsedSeconds: number;
+};
+
+type ProductivityStore = {
+  goals: Goal[];
+  activeSession: FocusSession | null;
+  isLoading: boolean;
+  
+  // Goal Actions
+  loadGoals: () => Promise<void>;
+  addGoal: (goal: Omit<Goal, "id" | "createdAt" | "status">) => Promise<void>;
+  toggleGoalStatus: (id: string) => Promise<void>;
+  
+  // Focus Session Actions
+  startSession: (title: string, objective: string, duration: number) => void;
+  pauseSession: () => void;
+  resumeSession: () => void;
+  endSession: () => void;
+  tickSession: () => void;
+};
+
+export const useProductivityStore = create<ProductivityStore>((set, get) => ({
+  goals: [],
+  activeSession: null,
+  isLoading: false,
+
+  loadGoals: async () => {
+    set({ isLoading: true });
+    const data = await window.elysiaDesktop.memory.read("goals.json");
+    set({ goals: data || [], isLoading: false });
+  },
+
+  addGoal: async (goalData) => {
+    const newGoal: Goal = {
+      ...goalData,
+      id: crypto.randomUUID(),
+      status: "active",
+      createdAt: Date.now(),
+    };
+    const nextGoals = [...get().goals, newGoal];
+    await window.elysiaDesktop.memory.write("goals.json", nextGoals);
+    set({ goals: nextGoals });
+  },
+
+  toggleGoalStatus: async (id) => {
+    const nextGoals = get().goals.map((g) =>
+      g.id === id
+        ? { ...g, status: (g.status === "completed" ? "active" : "completed") as Goal["status"] }
+        : g
+    );
+    await window.elysiaDesktop.memory.write("goals.json", nextGoals);
+    set({ goals: nextGoals });
+  },
+
+  startSession: (title, objective, duration) => {
+    set({
+      activeSession: {
+        id: crypto.randomUUID(),
+        title,
+        objective,
+        startTime: Date.now(),
+        durationMinutes: duration,
+        status: "active",
+        elapsedSeconds: 0,
+      },
+    });
+  },
+
+  pauseSession: () => {
+    set((state) => ({
+      activeSession: state.activeSession ? { ...state.activeSession, status: "paused" } : null,
+    }));
+  },
+
+  resumeSession: () => {
+    set((state) => ({
+      activeSession: state.activeSession ? { ...state.activeSession, status: "active" } : null,
+    }));
+  },
+
+  endSession: async () => {
+    const session = get().activeSession;
+    if (!session) return;
+
+    const completedSession = { ...session, status: "completed" as const };
+    set({ activeSession: completedSession });
+
+    // 1. Notify
+    void window.elysiaDesktop.notify("Session Complete", `Objective: ${session.objective}`);
+
+    // 2. Trigger summary in background if there's enough data
+    // We'll use a simplified trigger for now
+    try {
+      // In a real implementation, we'd pull history from assistantStore
+      const summaryFileName = `summary-${session.id}.json`;
+      await window.elysiaDesktop.memory.write(`summaries/${summaryFileName}`, {
+        ...completedSession,
+        completedAt: Date.now(),
+      });
+    } catch (e) {
+      console.error("Failed to save session summary", e);
+    }
+  },
+
+  tickSession: () => {
+    const session = get().activeSession;
+    if (session && session.status === "active") {
+      set({
+        activeSession: {
+          ...session,
+          elapsedSeconds: session.elapsedSeconds + 1,
+        },
+      });
+      
+      // Auto-complete if time is up
+      if (session.elapsedSeconds + 1 >= session.durationMinutes * 60) {
+        get().endSession();
+      }
+    }
+  },
+}));

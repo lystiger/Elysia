@@ -1,11 +1,15 @@
-import { app, BrowserWindow, globalShortcut, ipcMain } from "electron";
+import { app, BrowserWindow, globalShortcut, ipcMain, Notification } from "electron";
 import path from "node:path";
+import { initPersistence } from "./persistence";
 
 const isDev = !app.isPackaged;
 
 let mainWindow: BrowserWindow | null = null;
 
-function createWindow() {
+async function createWindow() {
+  // Initialize Phase 2 Persistence
+  await initPersistence();
+
   mainWindow = new BrowserWindow({
     width: 1440,
     height: 960,
@@ -39,12 +43,12 @@ function registerShortcuts() {
 }
 
 app.whenReady().then(() => {
-  createWindow();
+  void createWindow();
   registerShortcuts();
 
   app.on("activate", () => {
     if (BrowserWindow.getAllWindows().length === 0) {
-      createWindow();
+      void createWindow();
     }
   });
 });
@@ -60,5 +64,7 @@ app.on("will-quit", () => {
 });
 
 ipcMain.handle("app:get-version", () => app.getVersion());
-
 ipcMain.handle("system:get-memory", () => process.getSystemMemoryInfo());
+ipcMain.handle("app:notify", (_, { title, body }: { title: string; body: string }) => {
+  new Notification({ title, body }).show();
+});
