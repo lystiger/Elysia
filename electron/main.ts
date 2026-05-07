@@ -1,6 +1,7 @@
 import { app, BrowserWindow, globalShortcut, ipcMain, Notification } from "electron";
 import path from "node:path";
 import { initPersistence } from "./persistence";
+import { initAwareness } from "./awareness";
 
 const isDev = !app.isPackaged;
 
@@ -30,6 +31,9 @@ async function createWindow() {
   } else {
     void mainWindow.loadFile(path.join(__dirname, "../dist/index.html"));
   }
+
+  // Initialize Awareness (Phase 3)
+  initAwareness(mainWindow);
 }
 
 function registerShortcuts() {

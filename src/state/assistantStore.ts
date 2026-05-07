@@ -28,11 +28,13 @@ type AssistantStore = {
   promptSeed: string | null;
   state: AssistantState;
   isUserTyping: boolean;
+  observedApp: string;
   setActiveModel: (model: string) => void;
   setAvailableModels: (models: string[]) => void;
   setState: (state: AssistantState) => void;
   setAppVersion: (version: string) => void;
   setTyping: (isTyping: boolean) => void;
+  setObservedApp: (app: string) => void;
   focusComposer: (fn: () => void) => void;
   sendPrompt: (prompt: string) => Promise<void>;
   newChat: () => void;
@@ -56,12 +58,15 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   promptSeed: null,
   state: "ready",
   isUserTyping: false,
+  observedApp: "Desktop",
   setActiveModel: (activeModel) => set({ activeModel }),
   setAvailableModels: (availableModels) => set({ availableModels }),
   setState: (state) => set({ state }),
   setAppVersion: (appVersion) => set({ appVersion }),
   setTyping: (isUserTyping) => set({ isUserTyping }),
+  setObservedApp: (observedApp) => set({ observedApp }),
   focusComposer: (fn) => {
+
     focusComposerImpl = fn;
   },
   toggleHistory: () => set((state) => ({ historyOpen: !state.historyOpen })),

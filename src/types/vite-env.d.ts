@@ -17,6 +17,7 @@ declare global {
         listSummaries: () => Promise<string[]>;
       };
       notify: (title: string, body: string) => Promise<void>;
+      onWindowChanged: (callback: (title: string) => void) => () => void;
     };
   }
 }
