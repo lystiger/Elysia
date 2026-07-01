@@ -2,7 +2,7 @@ import { forwardRef, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { LoaderCircle, SendHorizontal, Terminal } from "lucide-react";
 import clsx from "clsx";
-import { useAssistantStore } from "../state/assistantStore";
+import { useAssistantStore } from "../../state/assistantStore";
 
 const SLASH_COMMANDS = [
   { command: "/settings", description: "Open preferences" },

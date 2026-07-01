@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { ChevronDown } from "lucide-react";
-import { listOllamaModels } from "../services/ollama";
-import { useAssistantStore } from "../state/assistantStore";
+import { listOllamaModels } from "../../services/ollama";
+import { useAssistantStore } from "../../state/assistantStore";
 
 export function ModelSelect() {
   const activeModel = useAssistantStore((store) => store.activeModel);

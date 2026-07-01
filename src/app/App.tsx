@@ -1,10 +1,10 @@
 import { useEffect, useRef } from "react";
-import { CompanionStage } from "./components/CompanionStage";
-import { Composer } from "./components/Composer";
-import { HistoryDrawer } from "./components/HistoryDrawer";
-import { Sidebar } from "./components/Sidebar";
-import { playStartupChime } from "./services/sound";
-import { useAssistantStore } from "./state/assistantStore";
+import { CompanionStage } from "../features/chat/CompanionStage";
+import { Composer } from "../features/chat/Composer";
+import { HistoryDrawer } from "../features/conversations/HistoryDrawer";
+import { Sidebar } from "../features/sidebar/Sidebar";
+import { playStartupChime } from "../services/system/sound";
+import { useAssistantStore } from "../state/assistantStore";
 
 function App() {
   const focusComposer = useAssistantStore((state) => state.focusComposer);

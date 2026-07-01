@@ -1,9 +1,9 @@
 import { useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
 import { ChevronDown, History } from "lucide-react";
-import { AvatarOrb } from "./AvatarOrb";
-import { recentSessions } from "../data/companion";
-import { useAssistantStore } from "../state/assistantStore";
+import { AvatarOrb } from "../../components/AvatarOrb";
+import { recentSessions } from "../sidebar/data";
+import { useAssistantStore } from "../../state/assistantStore";
 
 const statusLabel = {
   ready: "Ready",

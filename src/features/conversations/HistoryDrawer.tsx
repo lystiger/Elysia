@@ -1,6 +1,6 @@
 import { AnimatePresence, motion } from "framer-motion";
 import { Bot, X, UserRound } from "lucide-react";
-import { useAssistantStore } from "../state/assistantStore";
+import { useAssistantStore } from "../../state/assistantStore";
 
 export function HistoryDrawer() {
   const historyOpen = useAssistantStore((store) => store.historyOpen);

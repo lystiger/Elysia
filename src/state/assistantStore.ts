@@ -1,15 +1,10 @@
 import { create } from "zustand";
 import { pingOllama, streamFromOllama } from "../services/ollama";
-import { playResponseComplete } from "../services/sound";
+import { playResponseComplete } from "../services/system/sound";
+import type { Message } from "../domain/message/message";
 
 export type AssistantState = "ready" | "thinking" | "generating" | "offline";
 export type ConnectionStatus = "checking" | "connected" | "offline";
-
-type Message = {
-  id: string;
-  role: "user" | "assistant";
-  content: string;
-};
 
 type AssistantStore = {
   activeModel: string;

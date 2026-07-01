@@ -1,9 +1,9 @@
 import { useEffect, useState } from "react";
 import { Brain, Eye, Gauge, Mic, Pin, Plus, Sparkles, Wrench } from "lucide-react";
 import clsx from "clsx";
-import { pinnedProjects, recentSessions } from "../data/companion";
-import { useAssistantStore } from "../state/assistantStore";
-import { ModelSelect } from "./ModelSelect";
+import { pinnedProjects, recentSessions } from "./data";
+import { useAssistantStore } from "../../state/assistantStore";
+import { ModelSelect } from "../models/ModelSelect";
 
 function formatModelName(model: string): string {
   const [name = model, tag] = model.split(":");
