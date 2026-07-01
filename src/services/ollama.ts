@@ -73,3 +73,20 @@ export async function streamFromOllama({
 export async function verifyOllama(model: string) {
   await axios.post(`${DEFAULT_ENDPOINT}/api/show`, { model });
 }
+
+export async function pingOllama(): Promise<boolean> {
+  try {
+    await axios.get(`${DEFAULT_ENDPOINT}/api/tags`, { timeout: 3000 });
+    return true;
+  } catch {
+    return false;
+  }
+}
+
+export async function listOllamaModels(): Promise<string[]> {
+  const response = await axios.get<{ models?: Array<{ name: string }> }>(
+    `${DEFAULT_ENDPOINT}/api/tags`,
+    { timeout: 3000 }
+  );
+  return response.data.models?.map((model) => model.name) ?? [];
+}

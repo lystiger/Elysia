@@ -1,6 +1,7 @@
 import { useEffect, useRef } from "react";
+import { CompanionStage } from "./components/CompanionStage";
 import { Composer } from "./components/Composer";
-import { ResponsePanel } from "./components/ResponsePanel";
+import { HistoryDrawer } from "./components/HistoryDrawer";
 import { Sidebar } from "./components/Sidebar";
 import { useAssistantStore } from "./state/assistantStore";
 
@@ -30,9 +31,11 @@ function App() {
       <Sidebar />
 
       <div className="flex min-w-0 flex-1 flex-col gap-4 px-4 py-5 lg:px-8">
-        <ResponsePanel />
+        <CompanionStage />
         <Composer ref={composerRef} />
       </div>
+
+      <HistoryDrawer />
     </main>
   );
 }

@@ -29,7 +29,7 @@ function createWindow() {
 }
 
 function registerShortcuts() {
-  globalShortcut.register("T", () => {
+  globalShortcut.register("Shift+O", () => {
     mainWindow?.webContents.send("shortcut:focus-input");
     if (mainWindow !== null && mainWindow.isMinimized()) {
       mainWindow.restore();

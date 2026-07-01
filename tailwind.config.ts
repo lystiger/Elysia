@@ -14,12 +14,15 @@ export default {
         accent: {
           cyan: "#64f1ff",
           blue: "#58a6ff",
-          pink: "#ff7fe0",
+          violet: "#8f8bff",
           red: "#ff5f73"
         }
       },
       boxShadow: {
-        glow: "0 0 40px rgba(100, 241, 255, 0.25)"
+        glow: "0 0 40px rgba(100, 241, 255, 0.25)",
+        "glow-soft": "0 0 60px rgba(100, 241, 255, 0.12)",
+        "glow-violet": "0 0 60px rgba(143, 139, 255, 0.18)",
+        "glow-red": "0 0 50px rgba(255, 95, 115, 0.2)"
       },
       fontFamily: {
         display: ["ui-sans-serif", "system-ui", "sans-serif"]

@@ -1,7 +1,8 @@
 import { create } from "zustand";
-import { streamFromOllama } from "../services/ollama";
+import { pingOllama, streamFromOllama } from "../services/ollama";
 
-export type AssistantState = "idle" | "listening" | "thinking" | "responding" | "error";
+export type AssistantState = "ready" | "thinking" | "generating" | "offline";
+export type ConnectionStatus = "checking" | "connected" | "offline";
 
 type Message = {
   id: string;
@@ -11,33 +12,57 @@ type Message = {
 
 type AssistantStore = {
   activeModel: string;
+  availableModels: string[];
   appVersion: string;
+  connectionStatus: ConnectionStatus;
   history: Message[];
+  historyOpen: boolean;
+  promptSeed: string | null;
   state: AssistantState;
   setActiveModel: (model: string) => void;
+  setAvailableModels: (models: string[]) => void;
   setState: (state: AssistantState) => void;
   setAppVersion: (version: string) => void;
   focusComposer: (fn: () => void) => void;
   sendPrompt: (prompt: string) => Promise<void>;
   newChat: () => void;
+  toggleHistory: () => void;
+  checkConnection: () => Promise<void>;
+  seedPrompt: (text: string) => void;
+  clearPromptSeed: () => void;
 };
 
 let focusComposerImpl: (() => void) | null = null;
 
 export const useAssistantStore = create<AssistantStore>((set, get) => ({
   activeModel: "gemma4:e4b",
+  availableModels: [],
   appVersion: "",
+  connectionStatus: "checking",
   history: [],
-  state: "idle",
+  historyOpen: false,
+  promptSeed: null,
+  state: "ready",
   setActiveModel: (activeModel) => set({ activeModel }),
+  setAvailableModels: (availableModels) => set({ availableModels }),
   setState: (state) => set({ state }),
   setAppVersion: (appVersion) => set({ appVersion }),
   focusComposer: (fn) => {
     focusComposerImpl = fn;
   },
-  newChat: () => {
-    set({ history: [], state: "idle" });
+  toggleHistory: () => set((state) => ({ historyOpen: !state.historyOpen })),
+  seedPrompt: (text) => {
+    set({ promptSeed: text });
     focusComposerImpl?.();
+  },
+  clearPromptSeed: () => set({ promptSeed: null }),
+  newChat: () => {
+    set({ history: [], state: "ready", historyOpen: false });
+    focusComposerImpl?.();
+  },
+  checkConnection: async () => {
+    const reachable = await pingOllama();
+    set({ connectionStatus: reachable ? "connected" : "offline" });
   },
   sendPrompt: async (prompt) => {
     const userEntry: Message = {
@@ -72,21 +97,21 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           set((state) => {
             const lastEntry = state.history[state.history.length - 1];
             if (!lastEntry || lastEntry.id !== assistantId) {
-              return { state: firstToken ? "responding" : state.state };
+              return { state: firstToken ? "generating" : state.state };
             }
 
             const newHistory = [...state.history];
             newHistory[newHistory.length - 1] = { ...lastEntry, content: accumulatedContent };
             return {
               history: newHistory,
-              state: firstToken ? "responding" : state.state
+              state: firstToken ? "generating" : state.state
             };
           });
           firstToken = false;
         }
       });
 
-      set({ state: "idle" });
+      set({ state: "ready", connectionStatus: "connected" });
       focusComposerImpl?.();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown Ollama error.";
@@ -96,7 +121,8 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
             ? { ...entry, content: message.length > 0 ? message : "Unable to reach Ollama." }
             : entry
         ),
-        state: "error"
+        state: "offline",
+        connectionStatus: "offline"
       }));
     }
   }
