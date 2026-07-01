@@ -30,7 +30,7 @@ export function HistoryDrawer() {
               <button
                 type="button"
                 onClick={toggleHistory}
-                className="flex size-8 items-center justify-center rounded-full border border-white/10 text-slate-400 transition hover:bg-white/5 hover:text-slate-100"
+                className="flex size-8 items-center justify-center rounded-full border border-white/10 text-slate-400 transition-all duration-200 hover:scale-105 hover:bg-white/5 hover:text-slate-100 active:scale-95"
               >
                 <X className="size-4" />
               </button>
@@ -38,7 +38,10 @@ export function HistoryDrawer() {
 
             <div className="scrollbar-thin flex-1 space-y-3 overflow-y-auto pr-1">
               {history.map((entry) => (
-                <article key={entry.id} className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3">
+                <article
+                  key={entry.id}
+                  className="rounded-2xl border border-white/10 bg-white/[0.03] px-4 py-3 transition-all duration-200 hover:-translate-y-0.5 hover:border-white/15 hover:bg-white/[0.05]"
+                >
                   <div className="mb-1 flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-500">
                     {entry.role === "user" ? <UserRound className="size-3.5" /> : <Bot className="size-3.5" />}
                     <span>{entry.role === "user" ? "You" : "Elysia"}</span>

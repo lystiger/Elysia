@@ -60,3 +60,5 @@ app.on("will-quit", () => {
 });
 
 ipcMain.handle("app:get-version", () => app.getVersion());
+
+ipcMain.handle("system:get-memory", () => process.getSystemMemoryInfo());

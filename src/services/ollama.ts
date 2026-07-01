@@ -4,6 +4,8 @@ type OllamaChunk = {
   response?: string;
   done?: boolean;
   error?: string;
+  eval_count?: number;
+  eval_duration?: number;
 };
 
 type GenerateParams = {
@@ -11,6 +13,7 @@ type GenerateParams = {
   prompt: string;
   signal?: AbortSignal;
   onToken: (token: string) => void;
+  onDone?: (stats: { tokensPerSecond: number | null }) => void;
 };
 
 const DEFAULT_ENDPOINT = "http://localhost:11434";
@@ -19,7 +22,8 @@ export async function streamFromOllama({
   model,
   prompt,
   signal,
-  onToken
+  onToken,
+  onDone
 }: GenerateParams) {
   const response = await fetch(`${DEFAULT_ENDPOINT}/api/generate`, {
     method: "POST",
@@ -65,6 +69,14 @@ export async function streamFromOllama({
 
       if (chunk.response) {
         onToken(chunk.response);
+      }
+
+      if (chunk.done) {
+        const tokensPerSecond =
+          chunk.eval_count && chunk.eval_duration
+            ? chunk.eval_count / (chunk.eval_duration / 1e9)
+            : null;
+        onDone?.({ tokensPerSecond });
       }
     }
   }

@@ -3,6 +3,7 @@ import { CompanionStage } from "./components/CompanionStage";
 import { Composer } from "./components/Composer";
 import { HistoryDrawer } from "./components/HistoryDrawer";
 import { Sidebar } from "./components/Sidebar";
+import { playStartupChime } from "./services/sound";
 import { useAssistantStore } from "./state/assistantStore";
 
 function App() {
@@ -22,6 +23,7 @@ function App() {
     });
 
     void window.elysiaDesktop.getVersion().then(setAppVersion);
+    playStartupChime();
 
     return cleanup;
   }, [setAppVersion]);

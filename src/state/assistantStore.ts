@@ -1,5 +1,6 @@
 import { create } from "zustand";
 import { pingOllama, streamFromOllama } from "../services/ollama";
+import { playResponseComplete } from "../services/sound";
 
 export type AssistantState = "ready" | "thinking" | "generating" | "offline";
 export type ConnectionStatus = "checking" | "connected" | "offline";
@@ -15,6 +16,8 @@ type AssistantStore = {
   availableModels: string[];
   appVersion: string;
   connectionStatus: ConnectionStatus;
+  latencyMs: number | null;
+  tokensPerSecond: number | null;
   history: Message[];
   historyOpen: boolean;
   promptSeed: string | null;
@@ -39,6 +42,8 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   availableModels: [],
   appVersion: "",
   connectionStatus: "checking",
+  latencyMs: null,
+  tokensPerSecond: null,
   history: [],
   historyOpen: false,
   promptSeed: null,
@@ -61,8 +66,12 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     focusComposerImpl?.();
   },
   checkConnection: async () => {
+    const startedAt = performance.now();
     const reachable = await pingOllama();
-    set({ connectionStatus: reachable ? "connected" : "offline" });
+    set({
+      connectionStatus: reachable ? "connected" : "offline",
+      latencyMs: reachable ? Math.round(performance.now() - startedAt) : null
+    });
   },
   sendPrompt: async (prompt) => {
     const userEntry: Message = {
@@ -108,11 +117,13 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
             };
           });
           firstToken = false;
-        }
+        },
+        onDone: ({ tokensPerSecond }) => set({ tokensPerSecond })
       });
 
       set({ state: "ready", connectionStatus: "connected" });
       focusComposerImpl?.();
+      playResponseComplete();
     } catch (error) {
       const message = error instanceof Error ? error.message : "Unknown Ollama error.";
       set((state) => ({

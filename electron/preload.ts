@@ -9,5 +9,12 @@ contextBridge.exposeInMainWorld("elysiaDesktop", {
       ipcRenderer.removeListener("shortcut:focus-input", wrapped);
     };
   },
-  getVersion: () => ipcRenderer.invoke("app:get-version") as Promise<string>
+  getVersion: () => ipcRenderer.invoke("app:get-version") as Promise<string>,
+  getSystemMemory: () =>
+    ipcRenderer.invoke("system:get-memory") as Promise<{
+      total: number;
+      free: number;
+      swapTotal: number;
+      swapFree: number;
+    }>
 });
