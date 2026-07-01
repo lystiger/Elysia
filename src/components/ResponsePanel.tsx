@@ -1,46 +1,54 @@
-import { Bot, UserRound } from "lucide-react";
+import { Bot, Sparkles, UserRound } from "lucide-react";
+import clsx from "clsx";
 import { useAssistantStore } from "../state/assistantStore";
 
 export function ResponsePanel() {
   const history = useAssistantStore((state) => state.history);
-  const state = useAssistantStore((store) => store.state);
+  const activeModel = useAssistantStore((state) => state.activeModel);
+
+  if (history.length === 0) {
+    return (
+      <div className="flex flex-1 flex-col items-center justify-center gap-3 px-4 text-center">
+        <div className="flex size-14 items-center justify-center rounded-full border border-white/10 bg-white/5">
+          <Sparkles className="size-6 text-accent-cyan" />
+        </div>
+        <h2 className="font-display text-2xl font-semibold text-slate-100">How can I help you today?</h2>
+        <p className="text-sm text-slate-400">
+          Talking to <span className="text-cyan-200">{activeModel}</span> over your local Ollama instance.
+        </p>
+      </div>
+    );
+  }
 
   return (
-    <div className="flex min-h-0 flex-1 flex-col rounded-[28px] border border-white/10 bg-black/20 p-4">
-      <div className="mb-4 flex items-center justify-between">
-        <div>
-          <p className="text-xs uppercase tracking-[0.35em] text-slate-400">Session Feed</p>
-          <p className="mt-1 text-sm text-slate-300">Live response stream with minimal, local-only orchestration.</p>
-        </div>
-        <div className="rounded-full border border-white/10 bg-white/5 px-3 py-2 text-xs text-slate-300">
-          {history.length} messages
-        </div>
-      </div>
-
-      <div className="scrollbar-thin flex-1 space-y-3 overflow-y-auto pr-1">
-        {history.map((entry) => (
-          <article
-            key={entry.id}
-            className="rounded-[24px] border border-white/10 bg-white/[0.03] px-4 py-3"
-          >
-            <div className="mb-2 flex items-center gap-2 text-xs uppercase tracking-[0.25em] text-slate-400">
-              {entry.role === "user" ? <UserRound className="size-4" /> : <Bot className="size-4" />}
-              <span>{entry.role}</span>
-            </div>
-            <p className="whitespace-pre-wrap text-sm leading-6 text-slate-100">{entry.content}</p>
-          </article>
-        ))}
-
-        {history.length === 0 ? (
-          <div className="flex h-full min-h-56 items-center justify-center rounded-[24px] border border-dashed border-white/10 bg-white/[0.02] text-center text-sm text-slate-400">
-            Start a local conversation. The first response will stream into this panel.
+    <div className="scrollbar-thin mx-auto w-full max-w-3xl flex-1 space-y-1 overflow-y-auto">
+      {history.map((entry) => (
+        <article
+          key={entry.id}
+          className={clsx(
+            "flex gap-4 rounded-2xl px-4 py-4",
+            entry.role === "assistant" && "bg-white/[0.03]"
+          )}
+        >
+          <div className="mt-0.5 flex size-8 shrink-0 items-center justify-center rounded-full border border-white/10 bg-black/30">
+            {entry.role === "user" ? (
+              <UserRound className="size-4 text-slate-300" />
+            ) : (
+              <Bot className="size-4 text-cyan-200" />
+            )}
           </div>
-        ) : null}
-      </div>
-
-      <div className="mt-4 rounded-[22px] border border-white/10 bg-white/[0.03] px-4 py-3 text-sm text-slate-300">
-        Current pipeline state: <span className="font-medium capitalize text-white">{state}</span>
-      </div>
+          <div className="min-w-0 flex-1 pt-1">
+            <p className="mb-1 text-xs font-medium uppercase tracking-[0.25em] text-slate-500">
+              {entry.role === "user" ? "You" : "Elysia"}
+            </p>
+            <p className="whitespace-pre-wrap text-sm leading-6 text-slate-100">
+              {entry.content || (
+                <span className="text-slate-500">...</span>
+              )}
+            </p>
+          </div>
+        </article>
+      ))}
     </div>
   );
 }

@@ -1,6 +1,5 @@
 import { create } from "zustand";
 import { streamFromOllama } from "../services/ollama";
-import avatarShell from "../assets/avatar-shell.svg";
 
 export type AssistantState = "idle" | "listening" | "thinking" | "responding" | "error";
 
@@ -13,7 +12,6 @@ type Message = {
 type AssistantStore = {
   activeModel: string;
   appVersion: string;
-  avatarUrl: string;
   history: Message[];
   state: AssistantState;
   setActiveModel: (model: string) => void;
@@ -21,14 +19,14 @@ type AssistantStore = {
   setAppVersion: (version: string) => void;
   focusComposer: (fn: () => void) => void;
   sendPrompt: (prompt: string) => Promise<void>;
+  newChat: () => void;
 };
 
 let focusComposerImpl: (() => void) | null = null;
 
 export const useAssistantStore = create<AssistantStore>((set, get) => ({
-  activeModel: "deepseek-r1:8b",
+  activeModel: "gemma4:e4b",
   appVersion: "",
-  avatarUrl: avatarShell,
   history: [],
   state: "idle",
   setActiveModel: (activeModel) => set({ activeModel }),
@@ -36,6 +34,10 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   setAppVersion: (appVersion) => set({ appVersion }),
   focusComposer: (fn) => {
     focusComposerImpl = fn;
+  },
+  newChat: () => {
+    set({ history: [], state: "idle" });
+    focusComposerImpl?.();
   },
   sendPrompt: async (prompt) => {
     const userEntry: Message = {
@@ -68,11 +70,13 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         onToken: (token) => {
           accumulatedContent += token;
           set((state) => {
-            const newHistory = [...state.history];
-            const lastIdx = newHistory.length - 1;
-            if (lastIdx >= 0 && newHistory[lastIdx].id === assistantId) {
-              newHistory[lastIdx] = { ...newHistory[lastIdx], content: accumulatedContent };
+            const lastEntry = state.history[state.history.length - 1];
+            if (!lastEntry || lastEntry.id !== assistantId) {
+              return { state: firstToken ? "responding" : state.state };
             }
+
+            const newHistory = [...state.history];
+            newHistory[newHistory.length - 1] = { ...lastEntry, content: accumulatedContent };
             return {
               history: newHistory,
               state: firstToken ? "responding" : state.state
