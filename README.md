@@ -47,6 +47,35 @@ Build the renderer and Electron main/preload bundles:
 npm run build
 ```
 
+## UI verification with Playwright
+
+The renderer can be smoke-tested in a real browser with Playwright CLI:
+
+```bash
+# Terminal 1
+npm run dev:renderer -- --host 127.0.0.1
+
+# One-time browser install, then open the renderer
+npx --yes --package @playwright/cli playwright-cli install-browser firefox
+npx --yes --package @playwright/cli playwright-cli open http://127.0.0.1:5173 --browser firefox
+```
+
+Elysia is an Electron app, so a browser-only run must provide a test double for
+`window.elysiaDesktop` before reloading the page. The mock should implement the contract in
+`src/types/vite-env.d.ts` with in-memory storage and no-op desktop events. Keep Playwright snapshots,
+screenshots, and traces under `output/playwright/`.
+
+The browser smoke flow covers:
+
+- loading the General Space and opening the dynamic Space sidebar
+- creating a manual Space with a description and preferred model
+- confirming that Space suggestions seed and focus the composer
+- opening the removal choices for moving conversations to General or deleting them
+- opening the command palette and finding the newly created Space
+
+The native folder picker, JSON persistence, and folder metadata scanner depend on Electron IPC and
+must be verified in the desktop runtime; a browser preload mock does not validate those native paths.
+
 ## Usage
 
 1. Start Ollama and make sure the model you want is pulled and available:
