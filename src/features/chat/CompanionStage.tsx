@@ -7,9 +7,15 @@ import { useAssistantStore } from "../../state/assistantStore";
 
 const statusLabel = {
   ready: "Ready",
+  idle: "Ready",
+  listening: "Listening",
   thinking: "Thinking",
   generating: "Generating",
-  offline: "Offline"
+  responding: "Responding",
+  focused: "Focused",
+  paused: "Paused",
+  offline: "Offline",
+  error: "Error"
 } as const;
 
 const suggestions = ["What can you help me with?", "Summarize what you can do.", "Give me a quick status check."];

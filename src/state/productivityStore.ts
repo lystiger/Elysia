@@ -24,12 +24,12 @@ type ProductivityStore = {
   goals: Goal[];
   activeSession: FocusSession | null;
   isLoading: boolean;
-  
+
   // Goal Actions
   loadGoals: () => Promise<void>;
   addGoal: (goal: Omit<Goal, "id" | "createdAt" | "status">) => Promise<void>;
   toggleGoalStatus: (id: string) => Promise<void>;
-  
+
   // Focus Session Actions
   startSession: (title: string, objective: string, duration: number) => void;
   pauseSession: () => void;
@@ -45,7 +45,7 @@ export const useProductivityStore = create<ProductivityStore>((set, get) => ({
 
   loadGoals: async () => {
     set({ isLoading: true });
-    const data = await window.elysiaDesktop.memory.read("goals.json");
+    const data = (await window.elysiaDesktop.memory.read("goals.json")) as Goal[] | null;
     set({ goals: data || [], isLoading: false });
   },
 
@@ -132,7 +132,7 @@ export const useProductivityStore = create<ProductivityStore>((set, get) => ({
           elapsedSeconds: session.elapsedSeconds + 1,
         },
       });
-      
+
       // Auto-complete if time is up
       if (session.elapsedSeconds + 1 >= session.durationMinutes * 60) {
         void get().endSession();

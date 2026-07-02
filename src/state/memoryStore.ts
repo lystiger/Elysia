@@ -18,7 +18,7 @@ export const useMemoryStore = create<MemoryStore>((set, get) => ({
   isLoading: false,
   loadProfile: async () => {
     set({ isLoading: true });
-    const data = await window.elysiaDesktop.memory.read("profile.json");
+    const data = (await window.elysiaDesktop.memory.read("profile.json")) as UserProfile | null;
     set({ profile: data || { preferredTone: "calm", activeProjects: [], currentGoals: [] }, isLoading: false });
   },
   updateProfile: async (updates) => {

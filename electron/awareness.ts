@@ -14,7 +14,7 @@ export function initAwareness(mainWindow: Electron.BrowserWindow) {
 
   // Start polling every 5 seconds
   if (monitoringInterval) clearInterval(monitoringInterval);
-  
+
   monitoringInterval = setInterval(async () => {
     const currentWindow = await getActiveWindowTitle();
     if (currentWindow !== lastActiveWindow) {

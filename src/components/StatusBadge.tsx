@@ -1,26 +1,37 @@
 import clsx from "clsx";
 import { useAssistantStore } from "../state/assistantStore";
 
+const dotColor: Record<string, string> = {
+  idle: "bg-cyan-300",
+  listening: "bg-sky-400",
+  thinking: "bg-fuchsia-400",
+  responding: "bg-cyan-200",
+  focused: "bg-indigo-400",
+  paused: "bg-slate-400",
+  error: "bg-rose-400"
+};
+
 export function StatusBadge() {
   const state = useAssistantStore((store) => store.state);
   const version = useAssistantStore((store) => store.appVersion);
   const observedApp = useAssistantStore((store) => store.observedApp);
 
+  const showObservedApp = observedApp && observedApp !== "Desktop" && observedApp !== "Unknown";
+
   return (
-    <div className="flex items-center gap-2">
-      <div className="rounded-full border border-white/10 bg-black/20 px-3 py-2 text-[10px] uppercase tracking-wider text-slate-400">
-        Observing: <span className="text-cyan-300">{observedApp}</span>
-      </div>
-      <div
+    <div className="flex items-center gap-2 rounded-full border border-white/10 bg-white/5 px-3 py-1.5 text-xs backdrop-blur">
+      <span
         className={clsx(
-          "rounded-full border px-3 py-2 text-xs uppercase tracking-[0.3em]",
-          state === "error"
-            ? "border-red-300/40 bg-red-300/10 text-red-100"
-            : "border-cyan-300/20 bg-cyan-300/10 text-cyan-100"
+          "size-2 rounded-full",
+          dotColor[state] ?? "bg-cyan-300",
+          state !== "idle" && "animate-pulse"
         )}
-      >
-        {state} {version ? `v${version}` : ""}
-      </div>
+      />
+      <span className="capitalize text-slate-200">{state}</span>
+      {showObservedApp ? (
+        <span className="max-w-[10rem] truncate text-slate-500">· {observedApp}</span>
+      ) : null}
+      {version ? <span className="text-slate-600">v{version}</span> : null}
     </div>
   );
 }

@@ -55,39 +55,47 @@ export function AvatarOrb() {
     const last = store.history[store.history.length - 1];
     return last?.role === "assistant" ? last.content.length : 0;
   });
-  const config = stateConfig[state];
+  const visualState =
+    state === "thinking"
+      ? "thinking"
+      : state === "generating" || state === "responding"
+        ? "generating"
+        : state === "offline" || state === "error"
+          ? "offline"
+          : "ready";
+  const config = stateConfig[visualState];
   const coreControls = useAnimationControls();
   const previousLength = useRef(0);
 
   // Base per-state motion for the energy core: breathing at rest, a tighter
   // idle pulse otherwise. Token pulses (below) layer on top of this.
   useEffect(() => {
-    if (state === "ready") {
+    if (visualState === "ready") {
       void coreControls.start({
         scale: [1, 1.035, 1],
         y: [0, -5, 0]
       }, { duration: 4.5, repeat: Infinity, ease: "easeInOut" });
-    } else if (state === "thinking") {
+    } else if (visualState === "thinking") {
       void coreControls.start({ scale: [1, 1.02, 1], y: 0 }, { duration: 1.5, repeat: Infinity, ease: "easeInOut" });
-    } else if (state === "offline") {
+    } else if (visualState === "offline") {
       void coreControls.start({ scale: [1, 0.97, 1], y: 0 }, { duration: 1.3, repeat: Infinity, ease: "easeInOut" });
     } else {
       void coreControls.start({ scale: 1, y: 0 }, { duration: 0.3 });
     }
-  }, [state, coreControls]);
+  }, [visualState, coreControls]);
 
   // Sync a quick pulse to every streamed token while generating.
   useEffect(() => {
-    if (state === "generating" && lastContentLength > previousLength.current) {
+    if (visualState === "generating" && lastContentLength > previousLength.current) {
       void coreControls.start({ scale: [1, 1.045, 1] }, { duration: 0.3, ease: "easeOut" });
     }
     previousLength.current = lastContentLength;
-  }, [lastContentLength, state, coreControls]);
+  }, [lastContentLength, visualState, coreControls]);
 
   const particles = useMemo(() => PARTICLES, []);
 
   return (
-    <div className={clsx("relative flex size-64 items-center justify-center", state === "offline" && "grayscale")}>
+    <div className={clsx("relative flex size-64 items-center justify-center", visualState === "offline" && "grayscale")}>
       {/* Layer 1 — soft ambient radial wash */}
       <div className="pointer-events-none absolute size-[26rem] rounded-full bg-[radial-gradient(circle,_rgba(100,241,255,0.08),_transparent_60%)] blur-3xl" />
 
@@ -138,7 +146,7 @@ export function AvatarOrb() {
       {/* Layer 2 — subtle animated glow */}
       <motion.div
         animate={
-          state === "offline"
+          visualState === "offline"
             ? { opacity: [0.12, 0.25, 0.12] }
             : { opacity: [0.5, 0.78, 0.5] }
         }
@@ -153,7 +161,7 @@ export function AvatarOrb() {
       >
         <AnimatePresence mode="sync">
           <motion.div
-            key={state}
+            key={visualState}
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
@@ -163,7 +171,7 @@ export function AvatarOrb() {
         </AnimatePresence>
         <motion.div
           animate={{ opacity: [0.7, 1, 0.7] }}
-          transition={{ duration: state === "generating" ? 0.9 : 2.6, repeat: Infinity, ease: "easeInOut" }}
+          transition={{ duration: visualState === "generating" ? 0.9 : 2.6, repeat: Infinity, ease: "easeInOut" }}
           className="relative size-3 rounded-full bg-white/90 blur-[1px]"
         />
       </motion.div>

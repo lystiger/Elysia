@@ -56,7 +56,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   history: [],
   historyOpen: false,
   promptSeed: null,
-  state: "ready",
+  state: "idle",
   isUserTyping: false,
   observedApp: "Desktop",
   setActiveModel: (activeModel) => set({ activeModel }),
@@ -66,7 +66,6 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   setTyping: (isUserTyping) => set({ isUserTyping }),
   setObservedApp: (observedApp) => set({ observedApp }),
   focusComposer: (fn) => {
-
     focusComposerImpl = fn;
   },
   toggleHistory: () => set((state) => ({ historyOpen: !state.historyOpen })),
@@ -76,7 +75,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
   clearPromptSeed: () => set({ promptSeed: null }),
   newChat: () => {
-    set({ history: [], state: "ready", historyOpen: false });
+    set({ history: [], state: "idle", historyOpen: false });
     focusComposerImpl?.();
   },
   checkConnection: async () => {
@@ -118,16 +117,15 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         onToken: (token) => {
           accumulatedContent += token;
           set((state) => {
-            const lastEntry = state.history[state.history.length - 1];
-            if (!lastEntry || lastEntry.id !== assistantId) {
-              return { state: firstToken ? "generating" : state.state };
-            }
-
             const newHistory = [...state.history];
-            newHistory[newHistory.length - 1] = { ...lastEntry, content: accumulatedContent };
+            const lastIdx = newHistory.length - 1;
+            const last = newHistory[lastIdx];
+            if (last && last.id === assistantId) {
+              newHistory[lastIdx] = { ...last, content: accumulatedContent };
+            }
             return {
               history: newHistory,
-              state: firstToken ? "generating" : state.state
+              state: firstToken ? "responding" : state.state
             };
           });
           firstToken = false;
@@ -135,7 +133,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         onDone: ({ tokensPerSecond }) => set({ tokensPerSecond })
       });
 
-      set({ state: "ready", connectionStatus: "connected" });
+      set({ state: "idle", connectionStatus: "connected" });
       focusComposerImpl?.();
       playResponseComplete();
     } catch (error) {
@@ -146,7 +144,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
             ? { ...entry, content: message.length > 0 ? message : "Unable to reach Ollama." }
             : entry
         ),
-        state: "offline",
+        state: "error",
         connectionStatus: "offline"
       }));
     }
