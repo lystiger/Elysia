@@ -1,19 +1,17 @@
 // Conversation domain model.
 //
-// A conversation belongs to exactly one workspace and owns its messages plus
-// project metadata. The `metadata` bag is a deliberate seam for later phases
-// (documents, images, code, tasks) so those can attach without reshaping the
-// core contract. ConversationRepository stays independent of the workspace
-// layer — conversations only reference a workspace by id.
+// A conversation belongs to exactly one Space and owns its messages plus
+// project metadata. Space logic is kept separate from conversation logic — a
+// conversation only references a Space by id.
 
 import type { Message } from "../message/message";
 
 export type Conversation = {
   id: string;
-  workspaceId: string;
+  spaceId: string;
   title: string;
-  messages: Message[];
   model: string | null;
+  messages: Message[];
   pinned: boolean;
   createdAt: number;
   updatedAt: number;
@@ -23,17 +21,17 @@ export type Conversation = {
 const DEFAULT_TITLE = "New chat";
 
 export function createConversation(
-  workspaceId: string,
+  spaceId: string,
   title: string = DEFAULT_TITLE,
   model: string | null = null
 ): Conversation {
   const now = Date.now();
   return {
     id: crypto.randomUUID(),
-    workspaceId,
+    spaceId,
     title: title.trim() || DEFAULT_TITLE,
-    messages: [],
     model,
+    messages: [],
     pinned: false,
     createdAt: now,
     updatedAt: now,
@@ -55,11 +53,8 @@ export function deriveTitle(prompt: string): string {
 
 const byUpdatedDesc = (a: Conversation, b: Conversation) => b.updatedAt - a.updatedAt;
 
-export function conversationsForWorkspace(
-  conversations: Conversation[],
-  workspaceId: string
-): Conversation[] {
-  return conversations.filter((c) => c.workspaceId === workspaceId).sort(byUpdatedDesc);
+export function conversationsForSpace(conversations: Conversation[], spaceId: string): Conversation[] {
+  return conversations.filter((c) => c.spaceId === spaceId).sort(byUpdatedDesc);
 }
 
 export function recentConversations(conversations: Conversation[], limit = 6): Conversation[] {
@@ -70,15 +65,15 @@ export function pinnedConversations(conversations: Conversation[]): Conversation
   return conversations.filter((c) => c.pinned).sort(byUpdatedDesc);
 }
 
-export type WorkspaceStats = {
+export type SpaceStats = {
   count: number;
   lastActivity: number | null;
   recentModel: string | null;
   lastConversation: Conversation | null;
 };
 
-export function workspaceStats(conversations: Conversation[], workspaceId: string): WorkspaceStats {
-  const list = conversationsForWorkspace(conversations, workspaceId);
+export function spaceStats(conversations: Conversation[], spaceId: string): SpaceStats {
+  const list = conversationsForSpace(conversations, spaceId);
   const last = list[0] ?? null;
   return {
     count: list.length,

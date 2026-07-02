@@ -102,7 +102,9 @@ export function Sidebar() {
                 type="button"
                 className={clsx(
                   "flex w-full items-center gap-2.5 rounded-xl px-3 py-2 text-left text-sm transition-all duration-200 hover:translate-x-0.5 hover:bg-white/5 hover:text-slate-100",
-                  project.name === "Elysia" ? "bg-white/5 text-slate-100" : "text-slate-400"
+                  project.name === pinnedProjects[0]?.name
+                    ? "bg-white/5 text-slate-100"
+                    : "text-slate-400"
                 )}
               >
                 <project.icon className="size-3.5 shrink-0" />

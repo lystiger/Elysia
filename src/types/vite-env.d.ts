@@ -1,6 +1,16 @@
 /// <reference types="vite/client" />
 
 declare global {
+  // Read-only folder metadata returned by the main process (no file contents).
+  interface FolderScan {
+    name: string;
+    path: string;
+    tree: string;
+    fileCount: number;
+    extensions: string[];
+    truncated: boolean;
+  }
+
   interface Window {
     elysiaDesktop: {
       onFocusInput: (callback: () => void) => () => void;
@@ -17,6 +27,12 @@ declare global {
         listSummaries: () => Promise<string[]>;
       };
       notify: (title: string, body: string) => Promise<void>;
+      dialog: {
+        pickFolder: () => Promise<string | null>;
+      };
+      filesystem: {
+        scanFolder: (folderPath: string) => Promise<FolderScan | null>;
+      };
       onWindowChanged: (callback: (title: string) => void) => () => void;
     };
   }

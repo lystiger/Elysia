@@ -2,6 +2,8 @@ import { app, BrowserWindow, globalShortcut, ipcMain, Notification } from "elect
 import path from "node:path";
 import { initPersistence } from "./persistence";
 import { initAwareness } from "./awareness";
+import { registerDialogIpc } from "./ipc/dialog";
+import { registerFilesystemIpc } from "./ipc/filesystem";
 
 const isDev = !app.isPackaged;
 
@@ -47,6 +49,8 @@ function registerShortcuts() {
 }
 
 app.whenReady().then(() => {
+  registerDialogIpc(() => mainWindow);
+  registerFilesystemIpc();
   void createWindow();
   registerShortcuts();
 

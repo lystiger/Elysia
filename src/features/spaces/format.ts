@@ -1,4 +1,4 @@
-// Compact relative-time labels for sidebar rows and workspace stats.
+// Compact relative-time labels for sidebar rows and Space stats.
 export function formatRelativeTime(timestamp: number | null): string {
   if (!timestamp) {
     return "—";

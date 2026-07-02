@@ -1,5 +1,5 @@
 import { useEffect, useRef } from "react";
-import { Bot, UserRound, X } from "lucide-react";
+import { Bot, FolderTree, UserRound, X } from "lucide-react";
 import clsx from "clsx";
 import { useAssistantStore } from "../state/assistantStore";
 
@@ -76,12 +76,20 @@ export function HistoryDrawer({ open, onClose }: HistoryDrawerProps) {
                   "rounded-2xl border px-4 py-3",
                   entry.role === "user"
                     ? "border-white/10 bg-white/[0.04]"
-                    : "border-cyan-300/15 bg-cyan-300/[0.04]"
+                    : entry.role === "system"
+                      ? "border-indigo-300/15 bg-indigo-300/[0.04]"
+                      : "border-cyan-300/15 bg-cyan-300/[0.04]"
                 )}
               >
                 <div className="mb-1.5 flex items-center gap-2 text-[10px] uppercase tracking-[0.3em] text-slate-500">
-                  {entry.role === "user" ? <UserRound className="size-3.5" /> : <Bot className="size-3.5" />}
-                  <span>{entry.role === "user" ? "You" : "Elysia"}</span>
+                  {entry.role === "user" ? (
+                    <UserRound className="size-3.5" />
+                  ) : entry.role === "system" ? (
+                    <FolderTree className="size-3.5" />
+                  ) : (
+                    <Bot className="size-3.5" />
+                  )}
+                  <span>{entry.role === "user" ? "You" : entry.role === "system" ? "Folder context" : "Elysia"}</span>
                 </div>
                 <p className="whitespace-pre-wrap text-sm leading-6 text-slate-100">{entry.content}</p>
               </article>

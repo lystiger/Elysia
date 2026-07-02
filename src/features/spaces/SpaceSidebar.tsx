@@ -1,17 +1,22 @@
 import { useEffect, useMemo, useState } from "react";
-import { ChevronRight, Clock, MessageSquarePlus, Pin, Plus, Trash2, X } from "lucide-react";
-import clsx from "clsx";
-import { useWorkspace, useWorkspaceActions } from "./WorkspaceContext";
-import { WorkspaceIcon } from "./WorkspaceIcon";
-import { formatRelativeTime } from "./format";
-import { useWorkspaceStore } from "../../state/workspaceStore";
 import {
-  conversationsForWorkspace,
-  workspaceStats,
-  type Conversation
-} from "../../domain/conversation/conversation";
+  ChevronRight,
+  Clock,
+  Folder,
+  MessageSquarePlus,
+  Pin,
+  Plus,
+  Trash2,
+  X
+} from "lucide-react";
+import clsx from "clsx";
+import { conversationsForSpace, spaceStats, type Conversation } from "../../domain/conversation/conversation";
+import { useSpaceStore } from "../../state/spaceStore";
+import { SpaceIcon } from "./SpaceIcon";
+import { useSpace, useSpaceActions } from "./SpaceContext";
+import { formatRelativeTime } from "./format";
 
-type WorkspaceSidebarProps = {
+type SpaceSidebarProps = {
   open: boolean;
   onClose: () => void;
 };
@@ -27,8 +32,8 @@ function ConversationRow({
   dotColor: string;
   onOpen: () => void;
 }) {
-  const togglePin = useWorkspaceStore((state) => state.togglePinConversation);
-  const remove = useWorkspaceStore((state) => state.deleteConversation);
+  const togglePin = useSpaceStore((state) => state.togglePinConversation);
+  const remove = useSpaceStore((state) => state.deleteConversation);
 
   return (
     <div
@@ -37,11 +42,7 @@ function ConversationRow({
         active && "bg-white/[0.06]"
       )}
     >
-      <button
-        type="button"
-        onClick={onOpen}
-        className="flex min-w-0 flex-1 items-center gap-2 text-left"
-      >
+      <button type="button" onClick={onOpen} className="flex min-w-0 flex-1 items-center gap-2 text-left">
         <span className="size-1.5 shrink-0 rounded-full" style={{ backgroundColor: dotColor }} />
         <span className="truncate text-sm text-slate-200">{conversation.title}</span>
       </button>
@@ -54,9 +55,7 @@ function ConversationRow({
         aria-label={conversation.pinned ? "Unpin conversation" : "Pin conversation"}
         className={clsx(
           "shrink-0 rounded-md p-1 transition hover:bg-white/10",
-          conversation.pinned
-            ? "text-cyan-200"
-            : "text-slate-500 opacity-0 group-hover:opacity-100"
+          conversation.pinned ? "text-cyan-200" : "text-slate-500 opacity-0 group-hover:opacity-100"
         )}
       >
         <Pin className="size-3" />
@@ -73,23 +72,22 @@ function ConversationRow({
   );
 }
 
-export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
-  const { workspaces, conversations, activeWorkspaceId, activeConversationId, pinned, recent } =
-    useWorkspace();
-  const { switchWorkspace, openConversation, newChat } = useWorkspaceActions();
-  const createWorkspace = useWorkspaceStore((state) => state.createWorkspace);
+export function SpaceSidebar({ open, onClose }: SpaceSidebarProps) {
+  const { spaces, conversations, activeSpaceId, activeConversationId, pinned, recent } = useSpace();
+  const { switchSpace, openConversation, newChat } = useSpaceActions();
+  const setCreatorOpen = useSpaceStore((state) => state.setSpaceCreatorOpen);
   const [expanded, setExpanded] = useState<Set<string>>(() => new Set());
 
   useEffect(() => {
-    setExpanded((prev) => {
-      if (prev.has(activeWorkspaceId)) {
-        return prev;
+    setExpanded((previous) => {
+      if (previous.has(activeSpaceId)) {
+        return previous;
       }
-      const next = new Set(prev);
-      next.add(activeWorkspaceId);
+      const next = new Set(previous);
+      next.add(activeSpaceId);
       return next;
     });
-  }, [activeWorkspaceId]);
+  }, [activeSpaceId]);
 
   useEffect(() => {
     if (!open) {
@@ -104,18 +102,18 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
     return () => window.removeEventListener("keydown", onKey);
   }, [open, onClose]);
 
-  const orderedWorkspaces = useMemo(
-    () => [...workspaces].sort((a, b) => a.order - b.order),
-    [workspaces]
+  const orderedSpaces = useMemo(
+    () => [...spaces].sort((a, b) => Number(b.isPinned) - Number(a.isPinned) || a.order - b.order),
+    [spaces]
   );
   const colorFor = useMemo(() => {
-    const map = new Map(workspaces.map((w) => [w.id, w.color]));
+    const map = new Map(spaces.map((space) => [space.id, space.color]));
     return (id: string) => map.get(id) ?? "#64f1ff";
-  }, [workspaces]);
+  }, [spaces]);
 
   const toggleExpanded = (id: string) =>
-    setExpanded((prev) => {
-      const next = new Set(prev);
+    setExpanded((previous) => {
+      const next = new Set(previous);
       if (next.has(id)) {
         next.delete(id);
       } else {
@@ -128,21 +126,14 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
     openConversation(id);
     onClose();
   };
-  const handleNewChat = (workspaceId: string) => {
-    newChat(workspaceId);
+  const handleNewChat = (spaceId: string) => {
+    newChat(spaceId);
     onClose();
   };
-  const handleAddWorkspace = () => {
-    const workspace = createWorkspace({
-      name: "New Workspace",
-      icon: { kind: "emoji", value: "🗂️" },
-      color: "#a78bfa"
-    });
-    switchWorkspace(workspace.id);
-    setExpanded((prev) => new Set(prev).add(workspace.id));
+  const handleSwitchSpace = (id: string) => {
+    switchSpace(id);
+    onClose();
   };
-
-  const recentTop = recent.slice(0, 5);
 
   return (
     <>
@@ -157,20 +148,20 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
       <aside
         aria-hidden={!open}
         className={clsx(
-          "fixed left-0 top-0 z-40 flex h-full w-full max-w-[20rem] flex-col border-r border-white/10 bg-[#070b18]/95 backdrop-blur-xl transition-transform duration-300 ease-out",
+          "fixed left-0 top-0 z-40 flex h-full w-full max-w-[21rem] flex-col border-r border-white/10 bg-[#070b18]/95 backdrop-blur-xl transition-transform duration-300 ease-out",
           open ? "translate-x-0" : "-translate-x-[105%]"
         )}
       >
         <header className="flex items-center justify-between px-5 py-4">
           <div>
-            <p className="text-sm font-semibold text-slate-100">Workspaces</p>
-            <p className="text-xs text-slate-500">{workspaces.length} projects · local only</p>
+            <p className="text-sm font-semibold text-slate-100">Spaces</p>
+            <p className="text-xs text-slate-500">{spaces.length} context{spaces.length === 1 ? "" : "s"} · local only</p>
           </div>
           <div className="flex items-center gap-1.5">
             <button
               type="button"
-              onClick={handleAddWorkspace}
-              aria-label="New workspace"
+              onClick={() => setCreatorOpen(true)}
+              aria-label="Add Space"
               className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
             >
               <Plus className="size-4" />
@@ -178,7 +169,7 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
             <button
               type="button"
               onClick={onClose}
-              aria-label="Close workspaces"
+              aria-label="Close Spaces"
               className="rounded-full border border-white/10 bg-white/5 p-2 text-slate-300 transition hover:bg-white/10 hover:text-white"
             >
               <X className="size-4" />
@@ -188,11 +179,10 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
 
         <button
           type="button"
-          onClick={() => handleNewChat(activeWorkspaceId)}
+          onClick={() => handleNewChat(activeSpaceId)}
           className="mx-4 mb-2 flex items-center justify-center gap-2 rounded-2xl border border-cyan-300/25 bg-cyan-300/10 px-4 py-2.5 text-sm font-medium text-cyan-50 transition hover:bg-cyan-300/20"
         >
-          <MessageSquarePlus className="size-4" />
-          New chat
+          <MessageSquarePlus className="size-4" /> New chat
         </button>
 
         <div className="scrollbar-thin flex-1 space-y-5 overflow-y-auto px-4 py-3">
@@ -206,24 +196,24 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
                   key={conversation.id}
                   conversation={conversation}
                   active={conversation.id === activeConversationId}
-                  dotColor={colorFor(conversation.workspaceId)}
+                  dotColor={colorFor(conversation.spaceId)}
                   onOpen={() => handleOpenConversation(conversation.id)}
                 />
               ))}
             </section>
           ) : null}
 
-          {recentTop.length > 0 ? (
+          {recent.length > 0 ? (
             <section className="space-y-1">
               <p className="flex items-center gap-1.5 px-1 text-[10px] uppercase tracking-[0.3em] text-slate-500">
                 <Clock className="size-3" /> Recent
               </p>
-              {recentTop.map((conversation) => (
+              {recent.slice(0, 5).map((conversation) => (
                 <ConversationRow
                   key={conversation.id}
                   conversation={conversation}
                   active={conversation.id === activeConversationId}
-                  dotColor={colorFor(conversation.workspaceId)}
+                  dotColor={colorFor(conversation.spaceId)}
                   onOpen={() => handleOpenConversation(conversation.id)}
                 />
               ))}
@@ -231,15 +221,15 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
           ) : null}
 
           <section className="space-y-1">
-            <p className="px-1 text-[10px] uppercase tracking-[0.3em] text-slate-500">All workspaces</p>
+            <p className="px-1 text-[10px] uppercase tracking-[0.3em] text-slate-500">All Spaces</p>
             <ul className="flex flex-col gap-0.5">
-              {orderedWorkspaces.map((workspace) => {
-                const list = conversationsForWorkspace(conversations, workspace.id);
-                const stats = workspaceStats(conversations, workspace.id);
-                const isExpanded = expanded.has(workspace.id);
-                const isActive = workspace.id === activeWorkspaceId;
+              {orderedSpaces.map((space) => {
+                const list = conversationsForSpace(conversations, space.id);
+                const stats = spaceStats(conversations, space.id);
+                const isExpanded = expanded.has(space.id);
+                const isActive = space.id === activeSpaceId;
                 return (
-                  <li key={workspace.id}>
+                  <li key={space.id}>
                     <div
                       className={clsx(
                         "flex items-center gap-1 rounded-xl pr-1 transition",
@@ -248,36 +238,36 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
                     >
                       <button
                         type="button"
-                        onClick={() => switchWorkspace(workspace.id)}
+                        onClick={() => handleSwitchSpace(space.id)}
                         className="flex min-w-0 flex-1 items-center gap-2.5 py-2 pl-2 text-left"
                       >
                         <span
                           className="flex size-7 shrink-0 items-center justify-center rounded-lg border"
                           style={{
-                            borderColor: `${workspace.color}55`,
-                            backgroundColor: `${workspace.color}1a`,
-                            color: workspace.color
+                            borderColor: `${space.color}55`,
+                            backgroundColor: `${space.color}1a`,
+                            color: space.color
                           }}
                         >
-                          <WorkspaceIcon icon={workspace.icon} className="size-3.5" />
+                          <SpaceIcon icon={space.icon} className="size-3.5" />
                         </span>
-                        <span className="min-w-0">
-                          <span className="block truncate text-sm text-slate-100">{workspace.name}</span>
+                        <span className="min-w-0 flex-1">
+                          <span className="flex items-center gap-1.5">
+                            <span className="block truncate text-sm text-slate-100">{space.name}</span>
+                            {space.folderPath ? <Folder className="size-3 shrink-0 text-slate-500" /> : null}
+                          </span>
                           <span className="block truncate text-[10px] text-slate-500">
-                            {stats.count} chat{stats.count === 1 ? "" : "s"} ·{" "}
-                            {formatRelativeTime(stats.lastActivity)}
+                            {stats.count} chat{stats.count === 1 ? "" : "s"} · opened {formatRelativeTime(space.lastOpenedAt)}
                           </span>
                         </span>
                       </button>
                       <button
                         type="button"
-                        onClick={() => toggleExpanded(workspace.id)}
-                        aria-label={isExpanded ? "Collapse workspace" : "Expand workspace"}
+                        onClick={() => toggleExpanded(space.id)}
+                        aria-label={isExpanded ? "Collapse Space" : "Expand Space"}
                         className="shrink-0 rounded-md p-1.5 text-slate-500 transition hover:bg-white/10 hover:text-slate-200"
                       >
-                        <ChevronRight
-                          className={clsx("size-4 transition-transform", isExpanded && "rotate-90")}
-                        />
+                        <ChevronRight className={clsx("size-4 transition-transform", isExpanded && "rotate-90")} />
                       </button>
                     </div>
 
@@ -285,7 +275,7 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
                       <div className="mb-1 ml-3.5 flex flex-col gap-0.5 border-l border-white/10 pl-2">
                         <button
                           type="button"
-                          onClick={() => handleNewChat(workspace.id)}
+                          onClick={() => handleNewChat(space.id)}
                           className="flex items-center gap-2 rounded-lg px-2 py-1.5 text-left text-xs text-slate-400 transition hover:bg-white/5 hover:text-slate-200"
                         >
                           <MessageSquarePlus className="size-3.5" /> New chat here
@@ -298,7 +288,7 @@ export function WorkspaceSidebar({ open, onClose }: WorkspaceSidebarProps) {
                               key={conversation.id}
                               conversation={conversation}
                               active={conversation.id === activeConversationId}
-                              dotColor={workspace.color}
+                              dotColor={space.color}
                               onOpen={() => handleOpenConversation(conversation.id)}
                             />
                           ))

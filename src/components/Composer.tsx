@@ -2,10 +2,11 @@ import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState }
 import { Cpu, LoaderCircle, SendHorizontal } from "lucide-react";
 import clsx from "clsx";
 import { useAssistantStore } from "../state/assistantStore";
-import { useEffectiveModel, useWorkspaceStore } from "../state/workspaceStore";
+import { useEffectiveModel, useSpaceStore } from "../state/spaceStore";
 
 export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, forwardedRef) {
   const [prompt, setPrompt] = useState("");
+  const [modelDraft, setModelDraft] = useState("");
   const innerRef = useRef<HTMLTextAreaElement | null>(null);
   const status = useAssistantStore((state) => state.state);
   const sendPrompt = useAssistantStore((state) => state.sendPrompt);
@@ -13,11 +14,11 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
   const promptSeed = useAssistantStore((state) => state.promptSeed);
   const clearPromptSeed = useAssistantStore((state) => state.clearPromptSeed);
 
-  // Model follows the active conversation / workspace, and editing it here
-  // updates the workspace's remembered preference.
+  // Model follows the active conversation / Space, and editing it here updates
+  // the Space's remembered preference.
   const model = useEffectiveModel();
-  const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
-  const setWorkspaceModel = useWorkspaceStore((state) => state.setWorkspaceModel);
+  const activeSpaceId = useSpaceStore((state) => state.activeSpaceId);
+  const setSpaceModel = useSpaceStore((state) => state.setSpaceModel);
 
   const isBusy = status === "thinking" || status === "responding" || status === "generating";
   const isListening = status === "listening";
@@ -56,6 +57,10 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
     }
   }, [promptSeed, clearPromptSeed, setTyping]);
 
+  useEffect(() => {
+    setModelDraft(model);
+  }, [model]);
+
   async function handleSubmit() {
     const nextPrompt = prompt.trim();
     if (nextPrompt.length === 0 || isBusy) {
@@ -65,6 +70,11 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
     setPrompt("");
     setTyping(false);
     await sendPrompt(nextPrompt);
+  }
+
+  async function commitModelDraft() {
+    await setSpaceModel(activeSpaceId, modelDraft);
+    setModelDraft(useSpaceStore.getState().effectiveModel());
   }
 
   return (
@@ -126,8 +136,14 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
       <div className="mt-2 flex items-center justify-center gap-2 px-2 text-[11px] text-slate-500">
         <Cpu className="size-3" />
         <input
-          value={model}
-          onChange={(event) => setWorkspaceModel(activeWorkspaceId, event.target.value)}
+          value={modelDraft}
+          onChange={(event) => setModelDraft(event.target.value)}
+          onBlur={() => void commitModelDraft()}
+          onKeyDown={(event) => {
+            if (event.key === "Enter") {
+              event.currentTarget.blur();
+            }
+          }}
           aria-label="Active model"
           spellCheck={false}
           className="w-44 bg-transparent text-center text-cyan-200/80 outline-none placeholder:text-slate-600"

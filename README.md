@@ -10,7 +10,7 @@ The current implementation covers the first usable shell described in [docs/1stp
 - React + Tailwind renderer
 - Central animated orb reflecting assistant state (ready, thinking, generating, offline)
 - Floating current-exchange dialogue with a collapsible slide-over for full session history
-- Sidebar with model selector, connection status, and pinned-project shortcuts
+- Dynamic Space sidebar with local conversation navigation and optional folder bindings
 - prompt composer with `Shift+O` global hotkey focus
 - streamed Ollama responses from `POST /api/generate`
 
@@ -55,35 +55,35 @@ npm run build
    ollama list
    ```
 
-2. Launch the app (`npm run dev` or the packaged build). The sidebar's Model dropdown is populated from `GET /api/tags` and defaults to `gemma4:e4b`; pick any other pulled model from the list.
+2. Launch the app (`npm run dev` or the packaged build). The model control defaults to `gemma4:e4b`; enter another pulled model to remember it for the active Space.
 3. Type a prompt in the floating command bar and press `Enter` (Shift+Enter for a newline) to send it. The orb shifts from Ready → Thinking → Generating as the response streams in, and the latest exchange appears as a floating card above the command bar.
-4. Click "N earlier messages" under the current exchange to open the full session history in a slide-over drawer. Press `Shift+O` anywhere in the window to refocus the composer, or click "New chat" in the sidebar to clear the conversation and start over.
+4. Open the transcript drawer to review the active conversation. Press `Shift+O` anywhere in the window to refocus the composer, or click "New chat" in the Space sidebar to start over.
 
 The sidebar's Status pill reflects live Ollama reachability (checked on load and every 20s), independent of the per-message pipeline state. If Ollama isn't running or the model name doesn't match a pulled model, the assistant reply is replaced with the error returned by Ollama and the orb turns red.
 
-## Workspaces
+## Spaces
 
-Every conversation belongs to a **workspace** — a project environment (AOI, Computer
-Architecture, SignGlove, Elysia, Research, or the default General). Workspaces are seeded
-on first run and persisted locally as JSON under `data/memory/`
-(`workspaces.json` + `conversations.json`).
+Every conversation belongs to a **Space**, a user-created context that can optionally bind to a
+local folder. Only **General** is seeded; project names and folder paths are never hardcoded.
+Spaces and conversations persist as local JSON under `data/memory/` (`spaces.json` and
+`conversations.json`).
 
-- Open the workspace navigator from the top-left panel button: quick-access **Pinned** and
-  **Recent** conversations plus every workspace, each expandable to its own conversations.
-- Switching a workspace filters its conversations, updates the greeting and suggestion chips,
-  and auto-selects that workspace's preferred model. The last opened workspace is remembered.
-- Opening a workspace shows its landing page — recent activity, contextual suggestions, and
-  recent conversations — until you open or start a chat.
-- A new chat belongs to the current workspace (General if none is selected).
-- Press **Ctrl/Cmd+K** for the command palette: search across workspaces, conversation titles,
-  and recent messages, or run New Chat / Switch Workspace / Change Model / Open Settings.
-  Memory, Voice, and Vision appear as future placeholders.
+- Open the Space navigator from the top-left panel button to switch contexts, view pinned/recent
+  conversations, or create a Space.
+- **Add Folder as Space** uses Electron's native folder picker. Manual Spaces need no folder and
+  can carry a description, icon, and preferred model.
+- Switching Spaces filters conversations, restores the most recent chat, updates suggestions,
+  and selects the Space's preferred model when configured.
+- A Space home shows its folder binding, model, recent conversations, and safe rename/removal
+  actions. Removing a Space never changes its real folder; chats can move to General or be deleted.
+- **Inject Folder Context** scans names and lightweight metadata only (depth 3, up to 300 files),
+  ignoring common generated/dependency directories. It never reads file contents or runs commands.
+- Press **Ctrl/Cmd+K** to search Spaces and conversations, switch contexts, create a Space, or set
+  the active Space model.
 
-The architecture is layered so later phases (documents, images, code, memory, tasks) can attach
-to a workspace without reshaping the conversation contract: `domain/` (types + queries) →
-`services/storage` repositories (independent `WorkspaceRepository` / `ConversationRepository`) →
-`services/workspace` (`WorkspaceService`) → `state/workspaceStore` → `features/workspaces`
-(`WorkspaceContext` + UI).
+The architecture keeps Space and conversation concerns separate: `domain/space` and
+`domain/conversation` → independent JSON repositories in `services/storage` → `state/spaceStore`
+→ `features/spaces`. Folder access stays in the Electron main process behind the preload bridge.
 
 ## Structure
 
@@ -91,9 +91,9 @@ to a workspace without reshaping the conversation contract: `domain/` (types + q
 electron/               Electron main and preload bridge
 src/app                 Renderer bootstrap and application shell
 src/components           Shared UI primitives (orb, dialogue, composer, drawers)
-src/features/workspaces  Workspace navigator, landing page, command palette, context
-src/domain               Workspace / conversation / message models and queries
-src/services             Ollama transport, JSON storage, workspace service
-src/state                Assistant and workspace orchestration stores
+src/features/spaces      Space navigator, creator, home, command palette, context
+src/domain               Space / conversation / message models and queries
+src/services             Ollama transport, JSON storage, folder-context bridge
+src/state                Assistant and Space orchestration stores
 docs/                    Project specifications
 ```

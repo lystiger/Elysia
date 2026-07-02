@@ -1,7 +1,7 @@
 import { create } from "zustand";
 import { pingOllama, streamFromOllama } from "../services/ollama";
 import { playResponseComplete } from "../services/system/sound";
-import { useWorkspaceStore } from "./workspaceStore";
+import { useSpaceStore } from "./spaceStore";
 import type { Message } from "../domain/message/message";
 
 export type AssistantState =
@@ -40,6 +40,7 @@ type AssistantStore = {
   sendPrompt: (prompt: string) => Promise<void>;
   newChat: () => void;
   loadHistory: (messages: Message[]) => void;
+  appendSystemMessage: (content: string) => void;
   resetHistory: () => void;
   toggleHistory: () => void;
   checkConnection: () => Promise<void>;
@@ -78,14 +79,31 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
   clearPromptSeed: () => set({ promptSeed: null }),
   newChat: () => {
-    // A new chat belongs to the current workspace; the record is created lazily
+    // A new chat belongs to the current Space; the record is created lazily
     // on first send, so here we just clear the active conversation + buffer.
-    useWorkspaceStore.getState().setActiveConversation(null);
+    useSpaceStore.getState().setActiveConversation(null);
     set({ history: [], state: "idle", historyOpen: false, tokensPerSecond: null });
     focusComposerImpl?.();
   },
   loadHistory: (messages) => {
     set({ history: messages, state: "idle", historyOpen: false, tokensPerSecond: null });
+  },
+  appendSystemMessage: (content) => {
+    const trimmed = content.trim();
+    if (!trimmed) {
+      return;
+    }
+    const spaces = useSpaceStore.getState();
+    spaces.ensureActiveConversation();
+    const message: Message = {
+      id: crypto.randomUUID(),
+      role: "system",
+      content: trimmed
+    };
+    set((state) => ({ history: [...state.history, message] }));
+    useSpaceStore.getState().commitActiveConversation(get().history, {
+      model: useSpaceStore.getState().effectiveModel()
+    });
   },
   resetHistory: () => {
     set({ history: [], state: "idle", historyOpen: false, tokensPerSecond: null });
@@ -99,12 +117,19 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     });
   },
   sendPrompt: async (prompt) => {
-    // The active conversation (in the workspace layer) is the durable record;
+    // The active conversation (in the Space layer) is the durable record;
     // `history` here is its live streaming buffer. Ensure a conversation exists
-    // and resolve the model from the current workspace/conversation.
-    const workspace = useWorkspaceStore.getState();
-    workspace.ensureActiveConversation();
-    const model = useWorkspaceStore.getState().effectiveModel();
+    // and resolve the model from the current Space/conversation.
+    const spaces = useSpaceStore.getState();
+    spaces.ensureActiveConversation();
+    const model = useSpaceStore.getState().effectiveModel();
+    const systemContext = get()
+      .history.filter((message) => message.role === "system")
+      .map((message) => message.content)
+      .join("\n\n");
+    const modelPrompt = systemContext
+      ? `${systemContext}\n\nUser request:\n${prompt}`
+      : prompt;
 
     const userEntry: Message = {
       id: crypto.randomUUID(),
@@ -127,7 +152,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     }));
     // Commit the opening turn so the conversation jumps to the top of "Recent"
     // and gets a title immediately.
-    useWorkspaceStore.getState().commitActiveConversation(get().history, { model });
+    useSpaceStore.getState().commitActiveConversation(get().history, { model });
 
     try {
       let firstToken = true;
@@ -135,7 +160,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
       await streamFromOllama({
         model,
-        prompt,
+        prompt: modelPrompt,
         onToken: (token) => {
           accumulatedContent += token;
           set((state) => {
@@ -156,7 +181,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       });
 
       set({ state: "idle", connectionStatus: "connected" });
-      useWorkspaceStore.getState().commitActiveConversation(get().history, { model });
+      useSpaceStore.getState().commitActiveConversation(get().history, { model });
       focusComposerImpl?.();
       playResponseComplete();
     } catch (error) {
@@ -170,7 +195,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         state: "error",
         connectionStatus: "offline"
       }));
-      useWorkspaceStore.getState().commitActiveConversation(get().history, { model });
+      useSpaceStore.getState().commitActiveConversation(get().history, { model });
     }
   }
 }));

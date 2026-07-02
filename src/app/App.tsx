@@ -7,11 +7,12 @@ import { CurrentDialogue } from "../components/CurrentDialogue";
 import { HistoryDrawer } from "../components/HistoryDrawer";
 import { ObjectivesDrawer } from "../components/ObjectivesDrawer";
 import { StatusBadge } from "../components/StatusBadge";
-import { WorkspaceSidebar } from "../features/workspaces/WorkspaceSidebar";
-import { WorkspaceHome } from "../features/workspaces/WorkspaceHome";
-import { CommandPalette } from "../features/workspaces/CommandPalette";
-import { useWorkspace, useWorkspaceActions } from "../features/workspaces/WorkspaceContext";
-import { useWorkspaceStore } from "../state/workspaceStore";
+import { SpaceSidebar } from "../features/spaces/SpaceSidebar";
+import { SpaceHome } from "../features/spaces/SpaceHome";
+import { SpaceCreator } from "../features/spaces/SpaceCreator";
+import { CommandPalette } from "../features/spaces/CommandPalette";
+import { useSpace, useSpaceActions } from "../features/spaces/SpaceContext";
+import { useSpaceStore } from "../state/spaceStore";
 import { playStartupChime } from "../services/system/sound";
 import { useAssistantStore } from "../state/assistantStore";
 
@@ -24,9 +25,9 @@ function App() {
   const [historyOpen, setHistoryOpen] = useState(false);
   const [objectivesOpen, setObjectivesOpen] = useState(false);
 
-  const { activeConversationId } = useWorkspace();
-  const { newChat } = useWorkspaceActions();
-  const toggleCommandPalette = useWorkspaceStore((state) => state.toggleCommandPalette);
+  const { activeConversationId } = useSpace();
+  const { newChat } = useSpaceActions();
+  const toggleCommandPalette = useSpaceStore((state) => state.toggleCommandPalette);
 
   useEffect(() => {
     focusComposer(() => {
@@ -89,7 +90,7 @@ function App() {
           <button
             type="button"
             onClick={() => setSidebarOpen(true)}
-            aria-label="Open workspaces"
+            aria-label="Open Spaces"
             className="rounded-full border border-white/10 bg-white/5 p-2.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
           >
             <PanelLeft className="size-4" />
@@ -135,14 +136,15 @@ function App() {
       </header>
 
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-4 px-4 pb-8">
-        {activeConversationId ? <CurrentDialogue /> : <WorkspaceHome />}
+        {activeConversationId ? <CurrentDialogue /> : <SpaceHome />}
         <Composer ref={composerRef} />
       </div>
 
-      <WorkspaceSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
+      <SpaceSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <ObjectivesDrawer open={objectivesOpen} onClose={() => setObjectivesOpen(false)} />
       <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} />
       <CommandPalette />
+      <SpaceCreator />
     </main>
   );
 }
