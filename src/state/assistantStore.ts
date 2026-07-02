@@ -2,6 +2,13 @@ import { create } from "zustand";
 import { pingOllama, streamFromOllama } from "../services/ollama";
 import { playResponseComplete } from "../services/system/sound";
 import { useSpaceStore } from "./spaceStore";
+import {
+  buildProjectContextBundle,
+  formatContextBundleForPrompt,
+  promptNeedsProjectContext
+} from "../services/context-engine/contextEngine";
+import { getProjectIndex } from "../services/project-index/projectIndexService";
+import { useProjectIntelligenceStore } from "./projectIntelligenceStore";
 import type { Message, MessageErrorKind } from "../domain/message/message";
 
 export type AssistantState =
@@ -160,13 +167,51 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
     const spaces = useSpaceStore.getState();
     spaces.ensureActiveConversation();
     const model = useSpaceStore.getState().effectiveModel();
+    const activeSpace = spaces.spaces.find((space) => space.id === spaces.activeSpaceId);
+    const projectIntelligence = useProjectIntelligenceStore.getState();
+    projectIntelligence.clearProposals();
     const systemContext = get()
       .history.filter((message) => message.role === "system")
       .map((message) => message.content)
       .join("\n\n");
-    const modelPrompt = systemContext
-      ? `${systemContext}\n\nUser request:\n${prompt}`
-      : prompt;
+    let projectContext = "";
+
+    if (activeSpace?.folderPath && promptNeedsProjectContext(prompt)) {
+      projectIntelligence.setIndexing(true);
+      try {
+        const index = await getProjectIndex(activeSpace.folderPath);
+        projectIntelligence.setIndex(index);
+        const bundle = await buildProjectContextBundle(activeSpace.folderPath, prompt);
+        if (bundle) {
+          projectContext = formatContextBundleForPrompt(bundle);
+        }
+      } catch {
+        projectIntelligence.setIndex(null);
+      }
+    }
+
+    const modelPrompt = [
+      systemContext || null,
+      projectContext || null,
+      projectContext
+        ? [
+            "If you recommend a file modification and the COMPLETE file was provided, append this exact structured block:",
+            "```ELYSIA_DIFF",
+            "File: relative/path.md",
+            "Title: Short title",
+            "Summary: Short explanation",
+            "Before:",
+            "<complete current file>",
+            "After:",
+            "<complete proposed file>",
+            "```",
+            "Never emit an ELYSIA_DIFF block for partial or truncated files. Never claim the change was applied."
+          ].join("\n")
+        : null,
+      `User request:\n${prompt}`
+    ]
+      .filter(Boolean)
+      .join("\n\n");
 
     const userEntry: Message = {
       id: crypto.randomUUID(),
@@ -222,6 +267,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
 
       set({ state: "idle", connectionStatus: "connected", abortController: null });
       useSpaceStore.getState().commitActiveConversation(get().history, { model });
+      useProjectIntelligenceStore.getState().captureProposals(get().history.find((entry) => entry.id === assistantId)?.content ?? "");
       focusComposerImpl?.();
       playResponseComplete();
     } catch (error) {

@@ -1,6 +1,7 @@
 import { AnimatePresence, motion } from "framer-motion";
 import clsx from "clsx";
 import { useAssistantStore } from "../state/assistantStore";
+import { DiffReviewPanel } from "../features/project-intelligence/DiffReviewPanel";
 
 function ThinkingDots() {
   return (
@@ -47,14 +48,17 @@ export function CurrentDialogue() {
             {isThinking ? (
               <ThinkingDots />
             ) : (
-              <p
-                className={clsx(
-                  "whitespace-pre-wrap text-left text-[15px] leading-relaxed",
-                  isError ? "text-rose-100" : "text-slate-100"
-                )}
-              >
-                {text}
-              </p>
+              <>
+                <p
+                  className={clsx(
+                    "whitespace-pre-wrap text-left text-[15px] leading-relaxed",
+                    isError ? "text-rose-100" : "text-slate-100"
+                  )}
+                >
+                  {text}
+                </p>
+                <DiffReviewPanel />
+              </>
             )}
           </motion.div>
         ) : (

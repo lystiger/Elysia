@@ -1,5 +1,14 @@
 import { contextBridge, ipcRenderer } from "electron";
 import type { FolderScan } from "./ipc/filesystem";
+import type {
+  ApplyDiffRequest,
+  ApplyDiffResult,
+  ProjectFileRead,
+  ProjectIndex,
+  ProjectIndexOptions,
+  UndoWriteRequest,
+  UndoWriteResult
+} from "./project-intelligence/types";
 
 contextBridge.exposeInMainWorld("elysiaDesktop", {
   onFocusInput: (callback: () => void) => {
@@ -37,6 +46,18 @@ contextBridge.exposeInMainWorld("elysiaDesktop", {
     save: (conversation: unknown) => ipcRenderer.invoke("storage:save", conversation) as Promise<void>,
     delete: (id: string) => ipcRenderer.invoke("storage:delete", id) as Promise<void>,
     rename: (id: string, title: string) => ipcRenderer.invoke("storage:rename", id, title) as Promise<void>
+  },
+  project: {
+    setApprovedRoots: (roots: string[]) =>
+      ipcRenderer.invoke("project:set-approved-roots", roots) as Promise<void>,
+    index: (rootPath: string, options?: ProjectIndexOptions) =>
+      ipcRenderer.invoke("project:index", rootPath, options) as Promise<ProjectIndex | null>,
+    readFile: (rootPath: string, relativePath: string) =>
+      ipcRenderer.invoke("project:read-file", rootPath, relativePath) as Promise<ProjectFileRead | null>,
+    applyWrite: (request: ApplyDiffRequest) =>
+      ipcRenderer.invoke("project:apply-write", request) as Promise<ApplyDiffResult>,
+    undoWrite: (request: UndoWriteRequest) =>
+      ipcRenderer.invoke("project:undo-write", request) as Promise<UndoWriteResult>
   },
   onWindowChanged: (callback: (title: string) => void) => {
     const wrapped = (_: any, title: string) => callback(title);

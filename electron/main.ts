@@ -5,6 +5,7 @@ import { initPersistence } from "./persistence";
 import { initAwareness } from "./awareness";
 import { registerDialogIpc } from "./ipc/dialog";
 import { registerFilesystemIpc } from "./ipc/filesystem";
+import { registerProjectIntelligenceIpc } from "./project-intelligence/projectIntelligence";
 
 type StoredMessage = {
   id: string;
@@ -112,6 +113,7 @@ function registerShortcuts() {
 app.whenReady().then(() => {
   registerDialogIpc(() => mainWindow);
   registerFilesystemIpc();
+  registerProjectIntelligenceIpc();
   void createWindow();
   registerShortcuts();
 

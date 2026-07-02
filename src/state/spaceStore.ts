@@ -70,6 +70,13 @@ type SpaceState = {
 
 let persistTimer: ReturnType<typeof setTimeout> | null = null;
 
+function syncApprovedProjectRoots(spaces: Space[]): void {
+  const roots = spaces
+    .map((space) => space.folderPath)
+    .filter((folderPath): folderPath is string => Boolean(folderPath));
+  void window.elysiaDesktop.project.setApprovedRoots(roots);
+}
+
 // Conversations are persisted in bulk (debounced) because streaming commits are
 // frequent. Spaces persist per-operation through the repository.
 function persistConversations(get: () => SpaceState): void {
@@ -121,6 +128,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       currentModel: activeSpace?.preferredModel ?? DEFAULT_MODEL,
       hydrated: true
     });
+    syncApprovedProjectRoots(spaces);
   },
 
   setActiveSpace: (id) => {
@@ -165,7 +173,11 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
       folderPath,
       color
     });
-    set((state) => ({ spaces: [...state.spaces, space] }));
+    set((state) => {
+      const spaces = [...state.spaces, space];
+      syncApprovedProjectRoots(spaces);
+      return { spaces };
+    });
     return space;
   },
 
@@ -229,6 +241,7 @@ export const useSpaceStore = create<SpaceState>((set, get) => ({
     await spaceRepository.delete(id);
     await spaceRepository.setActive(get().activeSpaceId);
     await conversationRepository.saveAll(get().conversations);
+    syncApprovedProjectRoots(get().spaces);
   },
 
   buildFolderContext: async () => {
