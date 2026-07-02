@@ -2,9 +2,30 @@
 
 Elysia is a local-first desktop AI companion built with Electron, React, TypeScript, and Ollama. It's designed to feel like an ambient companion presence rather than a chatbot — a breathing orb at the center of the window, not a message thread.
 
-## Phase 1
+![Elysia Sprint 3 Space home](docs/pics/sprint-3-spaces.png)
 
-The current implementation covers the first usable shell described in [docs/1stphase.md](/home/lystiger/projects/Elysia/docs/1stphase.md):
+## Current state — Sprint 3: Dynamic Spaces
+
+Sprint 3 makes Elysia project-aware without forcing every conversation into a project. The current
+build includes:
+
+- a permanent General Space for everyday chat
+- user-created manual Spaces with descriptions, icons, suggestions, and preferred models
+- optional native folder binding through the context-isolated Electron preload bridge
+- Space-scoped conversations, recent/pinned navigation, and local JSON persistence
+- safe folder-context injection using names and shallow metadata only—never file contents
+- rename and removal workflows that never modify or delete the bound local folder
+- a searchable command palette for Spaces, conversations, and model selection
+
+The screenshot above is a Playwright-verified browser rendering with a mocked preload bridge. Native
+folder selection, persistence, and metadata scanning remain Electron-runtime verification paths.
+
+Current safety boundary: no autonomous tools, terminal execution, destructive filesystem actions,
+or bulk file-content reading.
+
+## Foundation — Phase 1
+
+The initial companion shell is described in [docs/1stphase.md](docs/1stphase.md):
 
 - Electron desktop runtime
 - React + Tailwind renderer
