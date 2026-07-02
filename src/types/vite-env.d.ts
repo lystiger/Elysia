@@ -1,5 +1,8 @@
 /// <reference types="vite/client" />
 
+import type { Conversation } from "../domain/conversation/conversation";
+import type { Session } from "../domain/session/session";
+
 declare global {
   // Read-only folder metadata returned by the main process (no file contents).
   interface FolderScan {
@@ -32,6 +35,13 @@ declare global {
       };
       filesystem: {
         scanFolder: (folderPath: string) => Promise<FolderScan | null>;
+      };
+      storage: {
+        list: () => Promise<Session[]>;
+        load: (id: string) => Promise<Conversation | null>;
+        save: (conversation: Conversation) => Promise<void>;
+        delete: (id: string) => Promise<void>;
+        rename: (id: string, title: string) => Promise<void>;
       };
       onWindowChanged: (callback: (title: string) => void) => () => void;
     };

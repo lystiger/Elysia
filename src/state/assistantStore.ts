@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { pingOllama, streamFromOllama } from "../services/ollama";
 import { playResponseComplete } from "../services/system/sound";
 import { useSpaceStore } from "./spaceStore";
-import type { Message } from "../domain/message/message";
+import type { Message, MessageErrorKind } from "../domain/message/message";
 
 export type AssistantState =
   | "ready"
@@ -30,6 +30,7 @@ type AssistantStore = {
   state: AssistantState;
   isUserTyping: boolean;
   observedApp: string;
+  abortController: AbortController | null;
   setActiveModel: (model: string) => void;
   setAvailableModels: (models: string[]) => void;
   setState: (state: AssistantState) => void;
@@ -38,8 +39,10 @@ type AssistantStore = {
   setObservedApp: (app: string) => void;
   focusComposer: (fn: () => void) => void;
   sendPrompt: (prompt: string) => Promise<void>;
+  cancelGeneration: () => void;
   newChat: () => void;
   loadHistory: (messages: Message[]) => void;
+  loadConversationMessages: (messages: Message[], model: string | null) => void;
   appendSystemMessage: (content: string) => void;
   resetHistory: () => void;
   toggleHistory: () => void;
@@ -49,6 +52,27 @@ type AssistantStore = {
 };
 
 let focusComposerImpl: (() => void) | null = null;
+
+function categorizeError(error: unknown): { kind: MessageErrorKind; message: string } {
+  if (error instanceof DOMException && error.name === "AbortError") {
+    return { kind: "aborted", message: "Generation stopped." };
+  }
+  if (error instanceof Error) {
+    const message = error.message.length > 0 ? error.message : "Unable to reach Ollama.";
+    const lower = message.toLowerCase();
+    if (lower.includes("abort")) {
+      return { kind: "aborted", message: "Generation stopped." };
+    }
+    if (lower.includes("not found") || lower.includes("model")) {
+      return { kind: "unknown-model", message };
+    }
+    if (lower.includes("fetch") || lower.includes("network") || lower.includes("failed")) {
+      return { kind: "offline", message };
+    }
+    return { kind: "unknown", message };
+  }
+  return { kind: "unknown", message: "Unknown Ollama error." };
+}
 
 export const useAssistantStore = create<AssistantStore>((set, get) => ({
   activeModel: "gemma4:e4b",
@@ -63,6 +87,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   state: "idle",
   isUserTyping: false,
   observedApp: "Desktop",
+  abortController: null,
   setActiveModel: (activeModel) => set({ activeModel }),
   setAvailableModels: (availableModels) => set({ availableModels }),
   setState: (state) => set({ state }),
@@ -87,6 +112,18 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
   },
   loadHistory: (messages) => {
     set({ history: messages, state: "idle", historyOpen: false, tokensPerSecond: null });
+  },
+  loadConversationMessages: (messages, model) => {
+    set((state) => ({
+      history: messages,
+      activeModel: model ?? state.activeModel,
+      state: "idle",
+      historyOpen: false,
+      tokensPerSecond: null
+    }));
+  },
+  cancelGeneration: () => {
+    get().abortController?.abort();
   },
   appendSystemMessage: (content) => {
     const trimmed = content.trim();
@@ -137,6 +174,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       content: prompt
     };
     const assistantId = crypto.randomUUID();
+    const controller = new AbortController();
 
     set((state) => ({
       history: [
@@ -148,7 +186,8 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
           content: ""
         }
       ],
-      state: "thinking"
+      state: "thinking",
+      abortController: controller
     }));
     // Commit the opening turn so the conversation jumps to the top of "Recent"
     // and gets a title immediately.
@@ -161,6 +200,7 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
       await streamFromOllama({
         model,
         prompt: modelPrompt,
+        signal: controller.signal,
         onToken: (token) => {
           accumulatedContent += token;
           set((state) => {
@@ -180,20 +220,21 @@ export const useAssistantStore = create<AssistantStore>((set, get) => ({
         onDone: ({ tokensPerSecond }) => set({ tokensPerSecond })
       });
 
-      set({ state: "idle", connectionStatus: "connected" });
+      set({ state: "idle", connectionStatus: "connected", abortController: null });
       useSpaceStore.getState().commitActiveConversation(get().history, { model });
       focusComposerImpl?.();
       playResponseComplete();
     } catch (error) {
-      const message = error instanceof Error ? error.message : "Unknown Ollama error.";
+      const { kind, message } = categorizeError(error);
       set((state) => ({
         history: state.history.map((entry) =>
           entry.id === assistantId
-            ? { ...entry, content: message.length > 0 ? message : "Unable to reach Ollama." }
+            ? { ...entry, content: message.length > 0 ? message : "Unable to reach Ollama.", error: true, errorKind: kind }
             : entry
         ),
-        state: "error",
-        connectionStatus: "offline"
+        state: kind === "aborted" ? "idle" : "error",
+        connectionStatus: kind === "aborted" ? state.connectionStatus : "offline",
+        abortController: null
       }));
       useSpaceStore.getState().commitActiveConversation(get().history, { model });
     }

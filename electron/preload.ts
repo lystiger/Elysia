@@ -31,6 +31,13 @@ contextBridge.exposeInMainWorld("elysiaDesktop", {
     scanFolder: (folderPath: string) =>
       ipcRenderer.invoke("fs:scan-folder", folderPath) as Promise<FolderScan | null>
   },
+  storage: {
+    list: () => ipcRenderer.invoke("storage:list"),
+    load: (id: string) => ipcRenderer.invoke("storage:load", id),
+    save: (conversation: unknown) => ipcRenderer.invoke("storage:save", conversation) as Promise<void>,
+    delete: (id: string) => ipcRenderer.invoke("storage:delete", id) as Promise<void>,
+    rename: (id: string, title: string) => ipcRenderer.invoke("storage:rename", id, title) as Promise<void>
+  },
   onWindowChanged: (callback: (title: string) => void) => {
     const wrapped = (_: any, title: string) => callback(title);
     ipcRenderer.on("awareness:window-changed", wrapped);

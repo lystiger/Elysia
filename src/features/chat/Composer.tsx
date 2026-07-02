@@ -1,6 +1,6 @@
 import { forwardRef, useEffect, useState } from "react";
 import { AnimatePresence, motion } from "framer-motion";
-import { LoaderCircle, SendHorizontal, Terminal } from "lucide-react";
+import { LoaderCircle, SendHorizontal, Square, Terminal } from "lucide-react";
 import clsx from "clsx";
 import { useAssistantStore } from "../../state/assistantStore";
 
@@ -17,6 +17,7 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, ref
   const [isFocused, setIsFocused] = useState(false);
   const status = useAssistantStore((state) => state.state);
   const sendPrompt = useAssistantStore((state) => state.sendPrompt);
+  const cancelGeneration = useAssistantStore((state) => state.cancelGeneration);
   const promptSeed = useAssistantStore((state) => state.promptSeed);
   const clearPromptSeed = useAssistantStore((state) => state.clearPromptSeed);
 
@@ -94,21 +95,29 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, ref
         />
         <motion.button
           type="button"
-          onClick={() => void handleSubmit()}
-          disabled={isBusy}
-          whileHover={isBusy ? undefined : { scale: 1.06 }}
-          whileTap={isBusy ? undefined : { scale: 0.92 }}
+          onClick={() => (isBusy ? cancelGeneration() : void handleSubmit())}
+          whileHover={{ scale: 1.06 }}
+          whileTap={{ scale: 0.92 }}
           className={clsx(
             "flex size-10 shrink-0 items-center justify-center rounded-full transition-colors duration-200",
             isBusy
-              ? "cursor-not-allowed border border-white/10 bg-white/5 text-slate-500"
+              ? "border border-red-300/20 bg-red-300/10 text-red-200 hover:bg-red-300/20"
               : "border border-cyan-300/20 bg-cyan-300/15 text-cyan-50 hover:bg-cyan-300/20"
           )}
         >
-          {isBusy ? <LoaderCircle className="size-4 animate-spin" /> : <SendHorizontal className="size-4" />}
+          {isBusy ? (
+            <span className="relative flex items-center justify-center">
+              <LoaderCircle className="size-4 animate-spin opacity-40" />
+              <Square className="absolute size-3 fill-current" />
+            </span>
+          ) : (
+            <SendHorizontal className="size-4" />
+          )}
         </motion.button>
       </div>
-      <p className="mt-2 text-center text-xs text-slate-600">Shift+O to focus · Enter to send · / for commands</p>
+      <p className="mt-2 text-center text-xs text-slate-600">
+        {isBusy ? "Click stop to cancel · " : ""}Shift+O to focus · Enter to send · / for commands
+      </p>
     </div>
   );
 });

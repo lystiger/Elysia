@@ -39,7 +39,16 @@ export async function streamFromOllama({
   });
 
   if (!response.ok || response.body === null) {
-    throw new Error(`Ollama request failed with status ${response.status}.`);
+    let detail = `Ollama request failed with status ${response.status}.`;
+    try {
+      const body = (await response.json()) as { error?: string };
+      if (body.error) {
+        detail = body.error;
+      }
+    } catch {
+      // Body wasn't JSON — keep the generic status message.
+    }
+    throw new Error(detail);
   }
 
   const reader = response.body.getReader();
@@ -62,7 +71,14 @@ export async function streamFromOllama({
         continue;
       }
 
-      const chunk = JSON.parse(trimmed) as OllamaChunk;
+      let chunk: OllamaChunk;
+      try {
+        chunk = JSON.parse(trimmed) as OllamaChunk;
+      } catch {
+        // A single malformed line shouldn't kill an otherwise-good stream.
+        continue;
+      }
+
       if (chunk.error) {
         throw new Error(chunk.error);
       }

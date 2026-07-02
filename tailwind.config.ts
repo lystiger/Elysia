@@ -1,9 +1,36 @@
 import type { Config } from "tailwindcss";
+import typography from "@tailwindcss/typography";
 
 export default {
   content: ["./index.html", "./src/**/*.{ts,tsx}"],
   theme: {
     extend: {
+      typography: {
+        invert: {
+          css: {
+            "--tw-prose-body": "#e2e8f0",
+            "--tw-prose-headings": "#f8fafc",
+            "--tw-prose-links": "#67e8f9",
+            "--tw-prose-bold": "#f8fafc",
+            "--tw-prose-quotes": "#cbd5e1",
+            "--tw-prose-quote-borders": "rgba(100,241,255,0.3)",
+            "--tw-prose-code": "#67e8f9",
+            "--tw-prose-hr": "rgba(255,255,255,0.1)",
+            "--tw-prose-th-borders": "rgba(255,255,255,0.15)",
+            "--tw-prose-td-borders": "rgba(255,255,255,0.08)",
+            maxWidth: "none",
+            code: {
+              backgroundColor: "rgba(255,255,255,0.08)",
+              borderRadius: "0.375rem",
+              padding: "0.15em 0.4em",
+              fontWeight: "500"
+            },
+            "code::before": { content: "none" },
+            "code::after": { content: "none" },
+            pre: { all: "unset" }
+          }
+        }
+      },
       colors: {
         shell: {
           950: "#050816",
@@ -38,5 +65,5 @@ export default {
       }
     }
   },
-  plugins: []
+  plugins: [typography]
 } satisfies Config;
