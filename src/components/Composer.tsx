@@ -1,18 +1,25 @@
-import { forwardRef, useCallback, useLayoutEffect, useRef, useState } from "react";
+import { forwardRef, useCallback, useEffect, useLayoutEffect, useRef, useState } from "react";
 import { Cpu, LoaderCircle, SendHorizontal } from "lucide-react";
 import clsx from "clsx";
 import { useAssistantStore } from "../state/assistantStore";
+import { useEffectiveModel, useWorkspaceStore } from "../state/workspaceStore";
 
 export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, forwardedRef) {
   const [prompt, setPrompt] = useState("");
   const innerRef = useRef<HTMLTextAreaElement | null>(null);
   const status = useAssistantStore((state) => state.state);
-  const activeModel = useAssistantStore((state) => state.activeModel);
-  const setActiveModel = useAssistantStore((state) => state.setActiveModel);
   const sendPrompt = useAssistantStore((state) => state.sendPrompt);
   const setTyping = useAssistantStore((state) => state.setTyping);
+  const promptSeed = useAssistantStore((state) => state.promptSeed);
+  const clearPromptSeed = useAssistantStore((state) => state.clearPromptSeed);
 
-  const isBusy = status === "thinking" || status === "responding";
+  // Model follows the active conversation / workspace, and editing it here
+  // updates the workspace's remembered preference.
+  const model = useEffectiveModel();
+  const activeWorkspaceId = useWorkspaceStore((state) => state.activeWorkspaceId);
+  const setWorkspaceModel = useWorkspaceStore((state) => state.setWorkspaceModel);
+
+  const isBusy = status === "thinking" || status === "responding" || status === "generating";
   const isListening = status === "listening";
   const canSend = prompt.trim().length > 0 && !isBusy;
 
@@ -38,6 +45,17 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
     el.style.height = `${Math.min(el.scrollHeight, 160)}px`;
   }, [prompt]);
 
+  // Suggestion chips seed the composer through the assistant store; pick it up
+  // here, drop it into the input, and clear the seed.
+  useEffect(() => {
+    if (promptSeed !== null) {
+      setPrompt(promptSeed);
+      setTyping(promptSeed.length > 0);
+      clearPromptSeed();
+      innerRef.current?.focus();
+    }
+  }, [promptSeed, clearPromptSeed, setTyping]);
+
   async function handleSubmit() {
     const nextPrompt = prompt.trim();
     if (nextPrompt.length === 0 || isBusy) {
@@ -54,7 +72,7 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
       <div
         className={clsx(
           "flex items-end gap-3 rounded-[26px] border bg-[#0a0f1f]/80 px-4 py-3 shadow-[0_18px_50px_-20px_rgba(0,0,0,0.9)] backdrop-blur-xl transition-colors",
-          status === "error"
+          status === "error" || status === "offline"
             ? "border-rose-400/40"
             : isListening
               ? "border-cyan-300/40 shadow-[0_0_45px_-8px_rgba(100,241,255,0.45)]"
@@ -86,7 +104,7 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
             }
           }}
           rows={1}
-          placeholder="Talk to Elysia…  (press T to focus, Enter to send)"
+          placeholder="Talk to Elysia…  (Shift+O to focus, Enter to send)"
           className="scrollbar-thin max-h-40 min-h-[1.5rem] w-full resize-none bg-transparent py-1.5 text-[15px] leading-6 text-slate-100 outline-none placeholder:text-slate-500"
         />
         <button
@@ -108,11 +126,11 @@ export const Composer = forwardRef<HTMLTextAreaElement>(function Composer(_, for
       <div className="mt-2 flex items-center justify-center gap-2 px-2 text-[11px] text-slate-500">
         <Cpu className="size-3" />
         <input
-          value={activeModel}
-          onChange={(event) => setActiveModel(event.target.value)}
+          value={model}
+          onChange={(event) => setWorkspaceModel(activeWorkspaceId, event.target.value)}
           aria-label="Active model"
           spellCheck={false}
-          className="w-40 bg-transparent text-center text-cyan-200/80 outline-none placeholder:text-slate-600"
+          className="w-44 bg-transparent text-center text-cyan-200/80 outline-none placeholder:text-slate-600"
         />
       </div>
     </div>

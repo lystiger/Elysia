@@ -4,3 +4,6 @@ dist
 dist-electron
 .DS_Store
 AGENTS.md
+
+# Local runtime persistence (workspaces, conversations, goals, summaries)
+data/

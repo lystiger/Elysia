@@ -1,5 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { MessageSquareText, Sparkles, Target } from "lucide-react";
+import { MessageSquareText, PanelLeft, Search, Sparkles, SquarePen, Target } from "lucide-react";
 import { Toaster } from "react-hot-toast";
 import { AvatarStage } from "../components/AvatarStage";
 import { Composer } from "../components/Composer";
@@ -7,6 +7,11 @@ import { CurrentDialogue } from "../components/CurrentDialogue";
 import { HistoryDrawer } from "../components/HistoryDrawer";
 import { ObjectivesDrawer } from "../components/ObjectivesDrawer";
 import { StatusBadge } from "../components/StatusBadge";
+import { WorkspaceSidebar } from "../features/workspaces/WorkspaceSidebar";
+import { WorkspaceHome } from "../features/workspaces/WorkspaceHome";
+import { CommandPalette } from "../features/workspaces/CommandPalette";
+import { useWorkspace, useWorkspaceActions } from "../features/workspaces/WorkspaceContext";
+import { useWorkspaceStore } from "../state/workspaceStore";
 import { playStartupChime } from "../services/system/sound";
 import { useAssistantStore } from "../state/assistantStore";
 
@@ -15,8 +20,13 @@ function App() {
   const setAppVersion = useAssistantStore((state) => state.setAppVersion);
   const setObservedApp = useAssistantStore((state) => state.setObservedApp);
   const composerRef = useRef<HTMLTextAreaElement | null>(null);
+  const [sidebarOpen, setSidebarOpen] = useState(false);
   const [historyOpen, setHistoryOpen] = useState(false);
   const [objectivesOpen, setObjectivesOpen] = useState(false);
+
+  const { activeConversationId } = useWorkspace();
+  const { newChat } = useWorkspaceActions();
+  const toggleCommandPalette = useWorkspaceStore((state) => state.toggleCommandPalette);
 
   useEffect(() => {
     focusComposer(() => {
@@ -38,6 +48,18 @@ function App() {
       cleanupAwareness();
     };
   }, [setAppVersion, setObservedApp]);
+
+  // Ctrl/Cmd+K opens the search + command palette.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent) => {
+      if (event.key.toLowerCase() === "k" && (event.metaKey || event.ctrlKey)) {
+        event.preventDefault();
+        toggleCommandPalette();
+      }
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [toggleCommandPalette]);
 
   return (
     <main className="relative h-screen w-screen overflow-hidden bg-[radial-gradient(circle_at_top,_rgba(88,166,255,0.14),_transparent_45%),radial-gradient(circle_at_bottom,_rgba(255,127,224,0.08),_transparent_40%),linear-gradient(180deg,_#070b18_0%,_#04060f_100%)] text-slate-100">
@@ -61,13 +83,38 @@ function App() {
       <div className="absolute inset-0">
         <AvatarStage />
       </div>
+
       <header className="pointer-events-none absolute inset-x-0 top-0 z-20 flex items-center justify-between px-6 py-5">
         <div className="pointer-events-auto flex items-center gap-2.5">
+          <button
+            type="button"
+            onClick={() => setSidebarOpen(true)}
+            aria-label="Open workspaces"
+            className="rounded-full border border-white/10 bg-white/5 p-2.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          >
+            <PanelLeft className="size-4" />
+          </button>
           <Sparkles className="size-5 text-accent-cyan" />
           <span className="font-display text-lg font-semibold tracking-wide">Elysia</span>
         </div>
         <div className="pointer-events-auto flex items-center gap-2">
           <StatusBadge />
+          <button
+            type="button"
+            onClick={() => newChat()}
+            aria-label="New chat"
+            className="rounded-full border border-white/10 bg-white/5 p-2.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          >
+            <SquarePen className="size-4" />
+          </button>
+          <button
+            type="button"
+            onClick={() => toggleCommandPalette(true)}
+            aria-label="Search and commands"
+            className="rounded-full border border-white/10 bg-white/5 p-2.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
+          >
+            <Search className="size-4" />
+          </button>
           <button
             type="button"
             onClick={() => setObjectivesOpen(true)}
@@ -79,19 +126,23 @@ function App() {
           <button
             type="button"
             onClick={() => setHistoryOpen(true)}
-            aria-label="Conversation history"
+            aria-label="Conversation transcript"
             className="rounded-full border border-white/10 bg-white/5 p-2.5 text-slate-300 transition hover:bg-white/10 hover:text-white"
           >
             <MessageSquareText className="size-4" />
           </button>
         </div>
       </header>
+
       <div className="pointer-events-none absolute inset-x-0 bottom-0 z-20 flex flex-col items-center gap-4 px-4 pb-8">
-        <CurrentDialogue />
+        {activeConversationId ? <CurrentDialogue /> : <WorkspaceHome />}
         <Composer ref={composerRef} />
       </div>
+
+      <WorkspaceSidebar open={sidebarOpen} onClose={() => setSidebarOpen(false)} />
       <ObjectivesDrawer open={objectivesOpen} onClose={() => setObjectivesOpen(false)} />
       <HistoryDrawer open={historyOpen} onClose={() => setHistoryOpen(false)} />
+      <CommandPalette />
     </main>
   );
 }

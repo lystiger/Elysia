@@ -61,14 +61,39 @@ npm run build
 
 The sidebar's Status pill reflects live Ollama reachability (checked on load and every 20s), independent of the per-message pipeline state. If Ollama isn't running or the model name doesn't match a pulled model, the assistant reply is replaced with the error returned by Ollama and the orb turns red.
 
-"Recent sessions", "Pinned projects", and the Memory/Voice/Tools rows in the sidebar are presentational placeholders for now — there's no persistence or multi-session backend yet, so they don't do anything when clicked.
+## Workspaces
+
+Every conversation belongs to a **workspace** — a project environment (AOI, Computer
+Architecture, SignGlove, Elysia, Research, or the default General). Workspaces are seeded
+on first run and persisted locally as JSON under `data/memory/`
+(`workspaces.json` + `conversations.json`).
+
+- Open the workspace navigator from the top-left panel button: quick-access **Pinned** and
+  **Recent** conversations plus every workspace, each expandable to its own conversations.
+- Switching a workspace filters its conversations, updates the greeting and suggestion chips,
+  and auto-selects that workspace's preferred model. The last opened workspace is remembered.
+- Opening a workspace shows its landing page — recent activity, contextual suggestions, and
+  recent conversations — until you open or start a chat.
+- A new chat belongs to the current workspace (General if none is selected).
+- Press **Ctrl/Cmd+K** for the command palette: search across workspaces, conversation titles,
+  and recent messages, or run New Chat / Switch Workspace / Change Model / Open Settings.
+  Memory, Voice, and Vision appear as future placeholders.
+
+The architecture is layered so later phases (documents, images, code, memory, tasks) can attach
+to a workspace without reshaping the conversation contract: `domain/` (types + queries) →
+`services/storage` repositories (independent `WorkspaceRepository` / `ConversationRepository`) →
+`services/workspace` (`WorkspaceService`) → `state/workspaceStore` → `features/workspaces`
+(`WorkspaceContext` + UI).
 
 ## Structure
 
 ```text
-electron/       Electron main and preload bridge
-src/components  UI building blocks
-src/services    Ollama transport
-src/state       App state and orchestration
-docs/           Project specifications
+electron/               Electron main and preload bridge
+src/app                 Renderer bootstrap and application shell
+src/components           Shared UI primitives (orb, dialogue, composer, drawers)
+src/features/workspaces  Workspace navigator, landing page, command palette, context
+src/domain               Workspace / conversation / message models and queries
+src/services             Ollama transport, JSON storage, workspace service
+src/state                Assistant and workspace orchestration stores
+docs/                    Project specifications
 ```
