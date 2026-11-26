@@ -1,0 +1,18 @@
+#!/usr/bin/env bash
+# Chat with Elysia (local model) via docker exec; each chat shows in the WS1 jobs pane.
+# Override with ELYSIA_CONTAINER, ELYSIA_MODEL, ELYSIA_CMD.
+MODEL="${ELYSIA_MODEL:-elysia}"
+C="${ELYSIA_CONTAINER:-elysia}"
+if ! docker ps --format '{{.Names}}' | grep -qx "$C"; then
+  echo "Elysia: container '$C' is not running. Start it: docker start $C"
+  read -r -p "Enter to close"; exit 1
+fi
+JOB="elysia-chat-$(date +%Y%m%d-%H%M%S)"
+LOG="$HOME/Work/agent-jobs-run/$JOB.log"
+mkdir -p "$(dirname "$LOG")"; echo "Elysia chat started $(date -Is)" > "$LOG"
+lysomarchy-agent-jobs register --id "$JOB" --task "Elysia chat" --agent Elysia --project Second-Brain --pid $$ --log "$LOG" 2>/dev/null && REGISTERED=1
+docker exec -it "$C" ${ELYSIA_CMD:-ollama run --think=false "$MODEL"}
+CODE=$?
+echo "Elysia chat ended $(date -Is) exit=$CODE" >> "$LOG"
+[ -n "$REGISTERED" ] && lysomarchy-agent-jobs finish --id "$JOB" --exit-code "$CODE" 2>/dev/null
+exit $CODE

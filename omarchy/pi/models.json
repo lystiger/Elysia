@@ -1,0 +1,19 @@
+{
+  "$schema": "https://pi.dev/schemas/models.schema.json",
+  "providers": {
+    "ollama": {
+      "baseUrl": "http://localhost:11434/v1",
+      "api": "openai-completions",
+      "apiKey": "ollama",
+      "models": [
+        {
+          "id": "elysia",
+          "name": "Elysia (local qwen3.5 4b)",
+          "contextWindow": 8192,
+          "maxTokens": 600,
+          "reasoning": true
+        }
+      ]
+    }
+  }
+}

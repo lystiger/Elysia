@@ -1,0 +1,89 @@
+--- /usr/share/omarchy/shell/plugins/agents/Panel.qml	2026-11-05 10:14:28.000000000 +0700
++++ /home/lystiger/.config/omarchy/plugins/lysomarchy.agents/Panel.qml	2026-11-26 12:58:27.052573183 +0700
+@@ -14,6 +14,7 @@
+ 
+   // Items inside the panel's lazily built content, null until it first
+   // opens. Code inside the content reaches its own ids directly.
++  property string activeTab: "agents"
+   readonly property Item panelFlick: panel.loadedContent ? panel.loadedContent.panelFlick : null
+   readonly property Item hero: panel.loadedContent ? panel.loadedContent.hero : null
+   readonly property Item column: panel.loadedContent ? panel.loadedContent.column : null
+@@ -1048,11 +1049,46 @@
+           width: panelFlick.width - panelFlick.overhang - (panelFlick.interactive ? panelScroll.width + Style.space(6) : 0)
+           spacing: Style.space(16)
+ 
++          // ---------- Interface switch: LysAgents | LysApp | Elysia ----------
++          Row {
++            id: interfaceSwitch
++            width: parent.width
++            spacing: Style.spacing.md
++            readonly property real cellWidth: (width - spacing * 2) / 3
++
++            Repeater {
++              model: [
++                { id: "agents", label: "LysAgents" },
++                { id: "lysapp", label: "LysApp" },
++                { id: "elysia", label: "Elysia" }
++              ]
++
++              Button {
++                required property var modelData
++                width: interfaceSwitch.cellWidth
++                text: modelData.label
++                selected: root.activeTab === modelData.id
++                bordered: true
++                foreground: root.foreground
++                fontFamily: root.fontFamily
++                fontSize: Style.font.bodySmall
++                verticalPadding: Style.spacing.controlPaddingY
++                onClicked: root.activeTab = modelData.id
++              }
++            }
++          }
++
++          Column {
++            id: agentsTab
++            visible: root.activeTab === "agents"
++            width: parent.width
++            spacing: Style.space(16)
++
+           // ---------- Hero: agents · rotating summary · add ----------
+           PanelHero {
+             id: hero
+             width: parent.width
+-            title: Commons.I18n.t("agents.title")
++            title: ""
+             meta: root.heroPhrase
+             foreground: root.foreground
+             fontFamily: root.fontFamily
+@@ -1163,6 +1199,30 @@
+             horizontalAlignment: Text.AlignHCenter
+             elide: Text.ElideRight
+           }
++
++          }
++
++          LysAppSection {
++            id: lysappSection
++            visible: root.activeTab === "lysapp"
++            width: parent.width
++            panelOpened: root.opened
++            foreground: root.foreground
++            dim: root.dim
++            urgent: root.urgent
++            fontFamily: root.fontFamily
++          }
++
++          ElysiaSection {
++            id: elysiaSection
++            visible: root.activeTab === "elysia"
++            width: parent.width
++            panelOpened: root.opened
++            foreground: root.foreground
++            dim: root.dim
++            urgent: root.urgent
++            fontFamily: root.fontFamily
++          }
+         }
+       }
+     }
