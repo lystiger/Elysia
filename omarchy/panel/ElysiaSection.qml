@@ -64,11 +64,6 @@ Column {
     command: ["foot", "--app-id=org.lysomarchy.elysia", "-e", root.home + "/.local/bin/elysia-chat"]
   }
 
-  Process {
-    id: piProc
-    command: ["foot", "--app-id=org.lysomarchy.elysia", "-e", root.home + "/.local/bin/elysia-pi"]
-  }
-
   Image {
     anchors.horizontalCenter: parent.horizontalCenter
     width: Style.space(96)
@@ -120,17 +115,5 @@ Column {
     fontSize: Style.font.bodySmall
     verticalPadding: Style.spacing.controlPaddingY
     onClicked: chatProc.running = true
-  }
-
-  Button {
-    width: parent.width
-    text: "Agent (pi · read-only vault)"
-    enabled: root.awake
-    bordered: true
-    foreground: root.foreground
-    fontFamily: root.fontFamily
-    fontSize: Style.font.bodySmall
-    verticalPadding: Style.spacing.controlPaddingY
-    onClicked: piProc.running = true
   }
 }
